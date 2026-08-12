@@ -65,10 +65,10 @@ Type rules (clean integer strings, real booleans, unknown fields rejected): [Req
     "slug": "one",
     "url": "https://www.songfacts.com/facts/u2/one",
     "artist": {
-      "id": 61,
+      "id": 78511,
       "name": "U2",
       "slug": "u2",
-      "url": "https://www.songfacts.com/facts/u2"
+      "url": "https://www.songfacts.com/songs/u2"
     },
     "youtube": {
       "youtubeid": "ftjEcrrf7r0",
@@ -77,8 +77,9 @@ Type rules (clean integer strings, real booleans, unknown fields rejected): [Req
     "has_lyrics": true,
     "lyrics": {
       "available": true,
-      "writers": "Bono, Adam Clayton, The Edge, Larry Mullen Jr.",
-      "preview": "Is it getting better, or do you feel the same? Will it make it easier on you now, you got someone to blame..."
+      "writers": "Adam Clayton, Dave Evans, Larry Mullen, Paul David Hewson",
+      "ownership": "Universal Music Publishing Group",
+      "preview": "Is it getting better Or do you feel the same? Will it make it easier on you now? You got someone to blame You say one love, one life (One life) It'..."
     },
     "pagination": {
       "limit": 10,
