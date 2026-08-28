@@ -1,0 +1,6 @@
+# IDE/editor directories - not used on this project, historically abused as a
+# malware delivery vector (see SECURITY remediation commit). Do not re-add.
+.idea/
+
+# editor settings
+.vscode/
