@@ -7,7 +7,8 @@ This repository is the public companion to [api.songfacts.com](https://api.songf
 - **Base URL:** `https://api.songfacts.com`
 - **Path shape:** `https://api.songfacts.com/{version}/{endpoint}` — e.g. `https://api.songfacts.com/v5/songfacts`
 - **Transport:** `POST` + JSON only, authenticated with HMAC-SHA256 signed headers
-- **Status:** v5 is live for `songfacts` and `artistfacts`; more endpoint families are in progress
+- **Current internal version:** `v1.1`
+- **Status:** v5 is live for `songfacts`, `artistfacts`, `categories`, `blurbs`, and `calendar`; more families are in progress
 
 ---
 
@@ -63,21 +64,21 @@ More samples: [Songfacts examples](https://api.songfacts.com/songfacts-examples)
 
 | Endpoint | What it returns | Docs |
 | --- | --- | --- |
-| `POST /v5/songfacts` | Song identity (title, slug, canonical URL, nested artist, YouTube, lyrics metadata) plus that song's full facts | [docs/endpoints/songfacts.md](docs/endpoints/songfacts.md) |
+| `POST /v5/songfacts` | Song identity (title, slug, canonical URL, nested artist, YouTube, categories, and other enrichments) plus that song's full facts | [docs/endpoints/songfacts.md](docs/endpoints/songfacts.md) |
 | `POST /v5/artistfacts` | Artist identity (name, slug, canonical URL) plus that artist's full facts | [docs/endpoints/artistfacts.md](docs/endpoints/artistfacts.md) |
+| `POST /v5/categories` | Category browse/search plus songs for a specific category by ID or slug | [docs/endpoints/categories.md](docs/endpoints/categories.md) |
+| `POST /v5/blurbs` | One matched artist or song blurb plus the matched metadata, without the full facts list | [docs/endpoints/blurbs.md](docs/endpoints/blurbs.md) |
+| `POST /v5/calendar` | Calendar category browse, timeline browse, and date-based music history entry lookups | [docs/endpoints/calendar.md](docs/endpoints/calendar.md) |
 
-Both accept lookup by `id` or by name, support `limit` / `offset` pagination, and can return matcher diagnostics with `debug: true`.
+`songfacts` and `artistfacts` accept lookup by `id` or by name. `categories` and `calendar` use action-based request bodies, and `blurbs` uses artist-required name lookup. All five support signed `POST` requests and diagnostic output with `debug: true` where applicable.
 
 ## Coming Soon
 
-These content families exist in the Songfacts archive and are being prepared as API endpoints. Content samples are live on the landing pages today; request and response contracts are not final.
+These content families exist in the Songfacts archive and are still in progress as public API surfaces.
 
 | Family | What it is | Samples |
 | --- | --- | --- |
-| **Categories** | 800+ curated tags that connect songs by theme — "songs about unhealthy relationships," "songs featuring a cowbell," "songs written or produced by Mutt Lange." Built for rabbit-hole browsing. | [Examples](https://api.songfacts.com/categories-examples) |
-| **Music History Calendar** | The biggest moments in music history for any given date, or across an artist's career. Built since 2007. | [Examples](https://api.songfacts.com/music-history-calendar-examples) |
 | **Quotes** | Direct quotes from artists, songwriters and producers, pulled from the Songfacts and American Songwriter interview archives. | [Examples](https://api.songfacts.com/quotes-examples) |
-| **Blurbs** | Compressed versions of select Songfacts and Artistfacts, under 280 characters, sized for cards, tooltips and now-playing screens. | [Examples](https://api.songfacts.com/blurbs-examples) |
 | **Trivia** | Multiple-choice music trivia with answers and audio clues, customized per client. | [Examples](https://api.songfacts.com/trivia-examples) |
 
 See [docs/roadmap.md](docs/roadmap.md) for the full planned expansion, including platform-level enhancements.
@@ -162,6 +163,9 @@ Full walkthrough: [docs/quick-start.md](docs/quick-start.md).
 | [Error Handling](docs/errors.md) | Failure model, every error type and code, no-match semantics |
 | [Endpoint: `/v5/songfacts`](docs/endpoints/songfacts.md) | Request modes, full response reference, samples |
 | [Endpoint: `/v5/artistfacts`](docs/endpoints/artistfacts.md) | Request modes, full response reference, samples |
+| [Endpoint: `/v5/categories`](docs/endpoints/categories.md) | Category browse/search, category-song lookups, pagination, samples |
+| [Endpoint: `/v5/blurbs`](docs/endpoints/blurbs.md) | Artist and song blurb lookup, fallback behavior, samples |
+| [Endpoint: `/v5/calendar`](docs/endpoints/calendar.md) | Calendar category, timeline, and date-entry request modes, pagination, samples |
 | [Use Cases](docs/use-cases.md) | Worked integrations for real product surfaces |
 | [Roadmap](docs/roadmap.md) | Planned endpoints and platform enhancements |
 
@@ -173,11 +177,11 @@ Full walkthrough: [docs/quick-start.md](docs/quick-start.md).
 - **Artist pages and bio modules** — Artistfacts as a scrollable "about" feed
 - **Editorial and CMS enrichment** — attach facts to articles, reviews and newsletters
 - **Playlist and radio segments** — pull a fact per track for DJ patter, voice assistants or on-screen cards
-- **Engagement features** — rabbit-hole browsing, this-day-in-music, quotes and trivia (using the families in progress)
+- **Engagement features** — rabbit-hole browsing, this-day-in-music, blurbs, quotes and trivia
 
 ## Code Samples
 
-Signed, runnable examples for the four core flows — songfacts by ID, songfacts by name, artistfacts by ID, artistfacts by name:
+Signed, runnable examples for the core songfacts and artistfacts flows plus the current v1.1 endpoint families for categories, blurbs, and calendar:
 
 - [cURL / bash](examples/curl.md)
 - [JavaScript (Node.js)](examples/javascript.md)
@@ -215,19 +219,16 @@ Mention "trial account" in the form's description field, or reply to our follow-
 
 The v5 contract was designed so new content families slot in without breaking existing integrations. What's on the roadmap:
 
-**New endpoint families**
+**New endpoint families still ahead**
 
-- **Categories** — list the 800+ Songfacts categories, and list songs within a category by ID or name. Turns a single song lookup into a browsable graph of related songs.
-- **Music History Calendar** — significant music events by date or by artist, for this-day-in-music features.
 - **Quotes** — artist, songwriter and producer quotes from the Songfacts and American Songwriter interview archives.
-- **Blurbs** — sub-280-character versions of select facts for constrained UI.
 - **Trivia** — question, answer-set and clue payloads, customized per client.
 
 **Platform enhancements**
 
 - **Usage reporting** — detailed per-client analytics on request volume, match outcomes and quota consumption, retained for six months and surfaced back to clients.
 - **Media enrichment** — thumbnail and image assets served from `img.songfacts.com`, delivered inside the matched object.
-- **Richer song payloads** — continued expansion of denormalized fields such as album, release year, chart positions, featured artists and categories.
+- **Richer song payloads** — continued expansion of denormalized fields such as album, release year, chart positions, featured artists, and categories.
 - **Shared match caching** — a cross-client resolved-match cache for faster repeat lookups.
 - **Per-client controls** — configurable quotas and rate policy on the client model.
 

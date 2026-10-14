@@ -17,7 +17,7 @@ Songfacts API v5 separates **transport success** from **API outcome**, and separ
 
 | Outcome | Body |
 | --- | --- |
-| **Match** | `meta.status = "ok"`, `meta.matched = true`, plus `song` or `artist` |
+| **Match** | `meta.status = "ok"`, `meta.matched = true`, plus endpoint-specific payload objects |
 | **No match** | `meta.status = "ok"`, `meta.matched = false` — a successful call with an empty result |
 | **Failure** | `meta.status = "fail"`, plus `meta.error` |
 
@@ -34,6 +34,8 @@ Songfacts API v5 separates **transport success** from **API outcome**, and separ
 ```
 
 On a failure, `meta` contains **only** `status` and `error` — no `matched`, no `match`, and root `debug` is omitted even if you asked for it.
+
+For the original fact endpoints that matched payload is usually `song` or `artist`. For action-based or list-style endpoints it may be `categories`, `songs`, `entries`, `category`, `timeline`, or related context objects.
 
 ## The error object
 
@@ -82,7 +84,7 @@ All field problems in a request are reported together, so one round-trip surface
 | --- | --- | --- |
 | `inactive_client` | Client account is not active, or is past its access window | Contact Songfacts |
 | `endpoint_not_allowed` | Your client isn't granted this endpoint | Endpoints are assigned per client; request the grant |
-| `showall_not_allowed` | `showall: true` isn't permitted for your client | Use `limit` / `offset` pagination |
+| `showall_not_allowed` | `showall: true` isn't permitted for your client or for that request mode | Use paginated results instead |
 | `quota_exceeded` | Metered allowance consumed (applies to trial and limited keys) | Contact Songfacts to raise or extend the allowance |
 
 ### `type: "request"` — malformed input
@@ -105,7 +107,12 @@ Field codes inside `invalid_fields`:
 | `not_allowed_with_pagination` | `showall` sent with `limit` or `offset` |
 | `not_allowed_with_showall` | `limit` / `offset` sent with `showall` |
 
-Unknown fields also fail under `invalid_fields` — the accepted set is closed. Full rules: [Requests & Responses](requests-and-responses.md#numeric-and-boolean-coercion).
+Unknown fields also fail under `invalid_fields` — the accepted set is closed. On action-based families, the accepted set may also depend on `action`. Full rules: [Requests & Responses](requests-and-responses.md#numeric-and-boolean-coercion).
+
+Two common v1.1 examples:
+
+- Sending `limit`, `offset`, or `showall` to `/v5/blurbs` returns `invalid_fields`.
+- Sending `showall` to `/v5/categories` with `action = "list"` returns `invalid_fields`.
 
 ### `type: "internal"` — server side
 

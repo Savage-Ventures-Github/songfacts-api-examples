@@ -75,12 +75,14 @@ Type rules (clean integer strings, real booleans, unknown fields rejected): [Req
       "url": "https://www.youtube.com/watch?v=ftjEcrrf7r0"
     },
     "has_lyrics": true,
-    "lyrics": {
-      "available": true,
-      "writers": "Adam Clayton, Dave Evans, Larry Mullen, Paul David Hewson",
-      "ownership": "Universal Music Publishing Group",
-      "preview": "Is it getting better Or do you feel the same? Will it make it easier on you now? You got someone to blame You say one love, one life (One life) It'..."
-    },
+    "categories": [
+      {
+        "category_id": 10995,
+        "category_slug": "songs-written-by-ryan-tedder",
+        "name": "Songs written by Ryan Tedder",
+        "url": "https://www.songfacts.com/category/songs-written-by-ryan-tedder"
+      }
+    ],
     "pagination": {
       "limit": 10,
       "offset": 0,
@@ -155,20 +157,18 @@ Optional fields are **omitted when unavailable** rather than returned as `null` 
 | `youtube.youtubeid` | string | Optional |
 | `youtube.url` | string | Optional. Watch URL for the official/canonical video. |
 | `has_lyrics` | boolean | Whether lyrics data exists for the song |
-| `lyrics.available` | boolean | Whether lyrics content is available to your client |
-| `lyrics.writers` | string | Credited songwriters |
-| `lyrics.ownership` | string | Optional rights/ownership note |
-| `lyrics.preview` | string | Optional short lyric excerpt |
 | `album` | string | Optional |
 | `release_year` | integer | Optional |
 | `charts.us` | — | Optional US chart position data |
 | `charts.uk` | — | Optional UK chart position data |
 | `featured_artists` | — | Optional featured-artist data |
-| `categories` | — | Optional category tags for the song. Previews the [Categories](../roadmap.md) family. |
+| `categories` | array | Optional category tags for the song. Each object may include `category_id`, `category_slug`, `name`, and `url`. |
 
 Enrichment coverage varies by song, and the set of enrichment fields is expanding — see the [roadmap](../roadmap.md). Write your renderer to skip absent fields rather than assuming a fixed shape.
 
-> **Lyrics note:** full lyrics are a separately licensed asset. `lyrics` carries metadata, writer credits and a short preview — not a full lyric sheet. Talk to us if full lyrics matter to your product.
+> **Lyrics note:** detailed nested `song.lyrics` metadata is not part of the current v1.1 public response. `has_lyrics` may still be present as a flag, but full lyrics remain a separately licensed asset.
+
+Category display names are normalized before they are served by the API. For example, legacy internal names with a `More ` prefix are returned in their cleaned display form.
 
 ### Pagination and facts
 

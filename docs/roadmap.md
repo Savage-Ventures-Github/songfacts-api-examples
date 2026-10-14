@@ -3,6 +3,7 @@
 What's live, what's next, and what stays stable while the API grows.
 
 - [Available now](#available-now)
+- [Live endpoint families added in v1.1](#live-endpoint-families-added-in-v11)
 - [Planned endpoint families](#planned-endpoint-families)
 - [Platform enhancements](#platform-enhancements)
 - [What won't change](#what-wont-change)
@@ -18,32 +19,34 @@ This page describes direction, not commitments. Timelines and contracts for unre
 | --- | --- |
 | `POST /v5/songfacts` | Live — lookup by ID or artist + title, paginated facts, matcher diagnostics |
 | `POST /v5/artistfacts` | Live — lookup by ID or artist, paginated facts, matcher diagnostics |
+| `POST /v5/categories` | Live — category browse/search, category-song lookup, pagination, matcher diagnostics where applicable |
+| `POST /v5/blurbs` | Live — artist and song blurb lookup with artist-blurb fallback when a song match has no song blurb |
+| `POST /v5/calendar` | Live — calendar category browse, timeline browse, and day-based event lookup with pagination |
 
 The platform underneath: HMAC-SHA256 request signing with replay protection, per-client endpoint grants, normalized plus fuzzy matching with exposed confidence scores, and shared match caching.
 
-## Planned endpoint families
-
-The v5 contract was designed so new families slot in alongside the existing ones. Nothing below requires changes to a `songfacts` or `artistfacts` integration.
+## Live endpoint families added in v1.1
 
 ### Categories
 
-Over 800 curated tags that connect songs by theme — the retention feature of the set. Planned capabilities:
+Over 800 curated tags that connect songs by theme — the retention feature of the set. Current capabilities:
 
-- **List categories** — browse or search the full category set
-- **List songs by category** — by category ID or category name
+- **List categories** — browse the full category set, narrow by type, or search by text
+- **List songs by category** — by category ID or category slug
 
-Multi-operation families like this one will use a single endpoint family plus an explicit `action` field in the JSON body, rather than a proliferation of paths.
+Categories uses a single endpoint family with an explicit `action` field in the JSON body. Category names are normalized for display before they are returned.
 
-**Already visible:** successful `songfacts` matches may include an optional `categories` field on the song object today. The request/response contract for the standalone family is still being finalized.
+Successful `songfacts` matches may also include optional category objects on the matched song, with `category_id`, `category_slug`, `name`, and `url`.
 
 [Content samples](https://api.songfacts.com/categories-examples) · [Use case](use-cases.md#7-rabbit-hole-discovery-categories)
 
 ### Music History Calendar
 
-Significant events in music history, built continuously since 2007. Planned capabilities:
+Significant events in music history, built continuously since 2007. Current capabilities:
 
-- **Events by date** — for this-day-in-music features
-- **Events by artist** — for career timelines
+- **Events by date** — by `day`, optionally narrowed by numeric `month` and `year`
+- **Timeline browse and lookup** — for artist or topic timeline surfaces
+- **Category browse and lookup** — for themed calendar browsing
 
 [Content samples](https://api.songfacts.com/music-history-calendar-examples) · [Use case](use-cases.md#8-this-day-in-music-calendar)
 
@@ -57,7 +60,13 @@ Direct quotes from artists, songwriters and producers, drawn from the Songfacts 
 
 Editorially compressed versions of select Songfacts and Artistfacts, under 280 characters, for cards, tooltips, notifications and other constrained surfaces. Available for both songs and artists.
 
+Blurbs returns one matched `blurb` string together with the matched artist or song metadata, rather than a full `facts.items` payload. Song-mode lookup falls back to the matched artist blurb when a song match exists but no song blurb is available.
+
 [Content samples](https://api.songfacts.com/blurbs-examples) · [Use case](use-cases.md#10-compact-surfaces-blurbs)
+
+## Planned endpoint families
+
+The v5 contract was designed so new families slot in alongside the existing ones. Nothing below requires changes to a current integration.
 
 ### Trivia
 
@@ -77,7 +86,7 @@ Thumbnail and presentation-oriented image assets delivered inside the matched ob
 
 ### Richer song and artist payloads
 
-Continued expansion of denormalized enrichment fields. Already appearing on `songfacts` matches where available: nested artist, YouTube, lyrics metadata, album, release year, US and UK chart positions, featured artists and categories. On `artistfacts`: dates of existence and members.
+Continued expansion of denormalized enrichment fields. Already appearing on `songfacts` matches where available: nested artist, YouTube, `has_lyrics`, album, release year, US and UK chart positions, featured artists and categories. On `artistfacts`: dates of existence and members.
 
 Because optional fields are **omitted when unavailable** rather than returned as `null`, new enrichment fields appear additively — write your renderer to check for key presence and it keeps working as coverage grows.
 
