@@ -88,8 +88,8 @@ Validation notes:
 Filter semantics:
 
 - no filters sent: all entries for the matched date
-- `filter_event_of_the_day = true`: only entries where the source `default = 1`
-- `filter_featured_event = true`: only entries where the source `eod = 1`
+- `filter_event_of_the_day = true`: only entries flagged as the event of the day
+- `filter_featured_event = true`: only entries flagged as featured events
 - both `true`: entries matching either flag
 
 ## Action: `timeline`
@@ -208,8 +208,8 @@ Timeline browse:
 
 Behavior notes:
 
-- `event_of_the_day` maps from source `default = 1`
-- `featured_event` maps from source `eod = 1`
+- `event_of_the_day` indicates whether the entry is flagged as the event of the day
+- `featured_event` indicates whether the entry is flagged as a featured event
 - `extended_entry_url` is present only when an entry has both `title` and `description`
 - `main_image_url` is present only when an entry has both `title` and `description`, and the shared calendar image exists
 - related categories and timelines are returned only when mappings exist for that entry

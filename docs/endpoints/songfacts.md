@@ -156,7 +156,7 @@ Optional fields are **omitted when unavailable** rather than returned as `null` 
 | --- | --- | --- |
 | `youtube.youtubeid` | string | Optional |
 | `youtube.url` | string | Optional. Watch URL for the official/canonical video. |
-| `has_lyrics` | boolean | Whether lyrics data exists for the song |
+| `has_lyrics` | boolean | Whether the song has lyrical content. Instrumental tracks return `false`. |
 | `album` | string | Optional |
 | `release_year` | integer | Optional |
 | `charts.us` | — | Optional US chart position data |
@@ -166,7 +166,7 @@ Optional fields are **omitted when unavailable** rather than returned as `null` 
 
 Enrichment coverage varies by song, and the set of enrichment fields is expanding — see the [roadmap](../roadmap.md). Write your renderer to skip absent fields rather than assuming a fixed shape.
 
-> **Lyrics note:** detailed nested `song.lyrics` metadata is not part of the current v1.1 public response. `has_lyrics` may still be present as a flag, but full lyrics remain a separately licensed asset.
+> **Lyrics note:** detailed nested `song.lyrics` metadata is not part of the current v1.1 public response. `has_lyrics` is a simple lyric-content flag: songs with lyrics return `true`, while instrumental tracks return `false`. Full lyrics remain a separately licensed asset.
 
 Category display names are normalized before they are served by the API. For example, legacy internal names with a `More ` prefix are returned in their cleaned display form.
 

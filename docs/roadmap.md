@@ -86,7 +86,7 @@ Thumbnail and presentation-oriented image assets delivered inside the matched ob
 
 ### Richer song and artist payloads
 
-Continued expansion of denormalized enrichment fields. Already appearing on `songfacts` matches where available: nested artist, YouTube, `has_lyrics`, album, release year, US and UK chart positions, featured artists and categories. On `artistfacts`: dates of existence and members.
+Continued expansion of denormalized enrichment fields. Already appearing on `songfacts` matches where available: nested artist, YouTube, `has_lyrics` (lyric-content flag), album, release year, US and UK chart positions, featured artists and categories. On `artistfacts`: dates of existence and members.
 
 Because optional fields are **omitted when unavailable** rather than returned as `null`, new enrichment fields appear additively — write your renderer to check for key presence and it keeps working as coverage grows.
 
