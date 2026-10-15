@@ -6,6 +6,7 @@ Requires `bash`, `curl` and `openssl`.
 
 - [The shared helper](#the-shared-helper)
 - [The four core flows](#the-four-core-flows)
+- [The v1.1 endpoint flows](#the-v11-endpoint-flows)
 - [One-liner without the helper](#one-liner-without-the-helper)
 - [Reading the result](#reading-the-result)
 - [Verifying your signing](#verifying-your-signing)
@@ -99,6 +100,37 @@ CLIENT_SECRET="your-shared-secret" \
 ./sf_call.sh /v5/songfacts '{"id":933}'
 ```
 
+## The v1.1 endpoint flows
+
+```bash
+# categories list / search
+./sf_call.sh /v5/categories '{"action":"list","q":"ryan tedder","sort":"relevance","limit":10,"debug":true}' | jq
+
+# category songs by slug
+./sf_call.sh /v5/categories '{"action":"songs","category_slug":"songs-written-by-ryan-tedder","artist":"OneRepublic","sort":"chart_position","limit":10,"debug":true}' | jq
+
+# blurbs by artist
+./sf_call.sh /v5/blurbs '{"artist":"Taylor Swift","debug":true}' | jq
+
+# blurbs by artist + title
+./sf_call.sh /v5/blurbs '{"artist":"U2","title":"One","debug":true}' | jq
+
+# calendar categories browse / search
+./sf_call.sh /v5/calendar '{"action":"categories","q":"album","limit":20,"offset":0,"debug":true}' | jq
+
+# calendar timeline by slug
+./sf_call.sh /v5/calendar '{"action":"timeline","timeline_slug":"nirvana","limit":20,"offset":0,"debug":true}' | jq
+
+# calendar entries by date
+./sf_call.sh /v5/calendar '{"action":"entries","month":9,"day":24,"year":1991,"sort":"date_asc","limit":20,"offset":0,"debug":true}' | jq
+```
+
+Notes:
+
+- `categories` uses explicit `action` values: `list` or `songs`.
+- `blurbs` returns a single matched `blurb`, not a `facts.items` object.
+- `calendar` defaults to `limit: 20`, `offset: 0`, `showall: false`.
+
 ## One-liner without the helper
 
 Copy-pasteable, everything inline:
@@ -143,6 +175,15 @@ curl -sS -X POST "https://api.songfacts.com${API_PATH}" \
 
 # why did a lookup behave that way?
 ./sf_call.sh /v5/songfacts '{"artist":"utwo","title":"on","debug":true}' | jq '.debug'
+
+# inspect a single returned blurb
+./sf_call.sh /v5/blurbs '{"artist":"Taylor Swift"}' | jq '.artist.blurb'
+
+# inspect category-song pagination
+./sf_call.sh /v5/categories '{"action":"songs","category_slug":"songs-written-by-ryan-tedder","limit":10}' | jq '.pagination'
+
+# inspect calendar entries for a date
+./sf_call.sh /v5/calendar '{"action":"entries","month":9,"day":24,"year":1991}' | jq '.entries'
 ```
 
 Fact values are **HTML** — expect inline `<i>` and `<b>` in the strings.

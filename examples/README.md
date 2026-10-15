@@ -1,6 +1,6 @@
 # Code Samples
 
-Signed, runnable examples for Songfacts API v5 in four languages. Each one implements the same thing: build the canonical string, sign it, send a JSON `POST`, and inspect the result.
+Signed, runnable examples for Songfacts API v5 in four languages. Each one implements the same thing: build the canonical string, sign it, send a JSON `POST`, and inspect the result. The samples cover both the original songfacts and artistfacts flows and the current v1.1 endpoint families for categories, blurbs, and calendar.
 
 | Language | File | Requires |
 | --- | --- | --- |
@@ -33,9 +33,9 @@ Set `BASE_URL` to the host assigned to your integration — production, or a sta
 
 > **Never commit the secret, and never ship it to a client device.** Anything holding it can call the API as you. If you prefer not to use environment variables, load it from your secrets manager — just don't paste it into a file you'll push.
 
-## The four core flows
+## The core flows
 
-Each sample covers all four:
+Each sample covers the four foundational lookups:
 
 | Flow | Endpoint | Body |
 | --- | --- | --- |
@@ -43,6 +43,20 @@ Each sample covers all four:
 | Songfacts by name | `/v5/songfacts` | `{"artist": "U2", "title": "One"}` |
 | Artistfacts by ID | `/v5/artistfacts` | `{"id": 24}` |
 | Artistfacts by name | `/v5/artistfacts` | `{"artist": "Metallica"}` |
+
+## The v1.1 endpoint flows
+
+Each sample also includes runnable request bodies for the newer endpoint families:
+
+| Flow | Endpoint | Body |
+| --- | --- | --- |
+| Categories list/search | `/v5/categories` | `{"action": "list", "q": "ryan tedder", "sort": "relevance", "limit": 10}` |
+| Category songs by slug | `/v5/categories` | `{"action": "songs", "category_slug": "songs-written-by-ryan-tedder", "artist": "OneRepublic", "sort": "chart_position", "limit": 10}` |
+| Blurbs by artist | `/v5/blurbs` | `{"artist": "Taylor Swift"}` |
+| Blurbs by artist + title | `/v5/blurbs` | `{"artist": "U2", "title": "One"}` |
+| Calendar categories browse/search | `/v5/calendar` | `{"action": "categories", "q": "album", "limit": 20}` |
+| Calendar timeline by slug | `/v5/calendar` | `{"action": "timeline", "timeline_slug": "nirvana", "limit": 20}` |
+| Calendar entries by date | `/v5/calendar` | `{"action": "entries", "month": 9, "day": 24, "year": 1991, "limit": 20}` |
 
 ## The signing recipe
 
@@ -99,11 +113,11 @@ signature = 9ffdbed7075e2bf9ab81e1ae045f98f9d6750c11bd41d1532d712d9cd18a1773
 
 | Outcome | Body |
 | --- | --- |
-| Match | `meta.status = "ok"`, `meta.matched = true`, plus `song` or `artist` |
+| Match | `meta.status = "ok"`, `meta.matched = true`, plus endpoint-specific payload objects |
 | No match | `meta.status = "ok"`, `meta.matched = false` — a successful call, not an error |
 | Auth failure | `meta.status = "fail"`, `meta.error.type = "auth"` |
 | Validation failure | `meta.status = "fail"`, `meta.error.code = "invalid_fields"` |
 
-**The HTTP status is always `200`.** Branch on `meta.status`, then `meta.matched`. See [Error Handling](../docs/errors.md).
+**The HTTP status is always `200`.** Branch on `meta.status`, then `meta.matched`. For `songfacts` and `artistfacts`, matched data comes back under `song` or `artist`. The newer endpoints return endpoint-specific payloads such as `categories`, `songs`, `entries`, `category`, `timeline`, or a matched object with a single `blurb`. See [Error Handling](../docs/errors.md).
 
 Add `"debug": true` to any body while integrating — the root `debug` object shows the normalized input the matcher actually used, the method it chose, and the score against the threshold.

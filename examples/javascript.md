@@ -3,7 +3,7 @@
 A complete Songfacts API v5 client for Node.js. No dependencies — built-in `fetch` and `node:crypto`. **Node.js 18+.**
 
 - [The client](#the-client)
-- [The four core flows](#the-four-core-flows)
+- [The core and v1.1 flows](#the-core-and-v11-flows)
 - [Reading the result](#reading-the-result)
 - [Paging through facts](#paging-through-facts)
 - [Verifying your signing](#verifying-your-signing)
@@ -75,20 +75,30 @@ export async function call(path, payload, { timeoutMs = 10_000 } = {}) {
 
 export const songfacts = (payload) => call("/v5/songfacts", payload);
 export const artistfacts = (payload) => call("/v5/artistfacts", payload);
+export const categories = (payload) => call("/v5/categories", payload);
+export const blurbs = (payload) => call("/v5/blurbs", payload);
+export const calendar = (payload) => call("/v5/calendar", payload);
 ```
 
-## The four core flows
+## The core and v1.1 flows
 
 `run-examples.mjs`
 
 ```js
-import { artistfacts, songfacts } from "./songfacts-client.mjs";
+import { artistfacts, blurbs, calendar, categories, songfacts } from "./songfacts-client.mjs";
 
 const examples = [
   ["songfacts by id",     () => songfacts({ id: 933 })],
   ["songfacts by name",   () => songfacts({ artist: "U2", title: "One" })],
   ["artistfacts by id",   () => artistfacts({ id: 24 })],
   ["artistfacts by name", () => artistfacts({ artist: "Metallica" })],
+  ["categories list",     () => categories({ action: "list", q: "ryan tedder", sort: "relevance", limit: 10, debug: true })],
+  ["categories songs",    () => categories({ action: "songs", category_slug: "songs-written-by-ryan-tedder", artist: "OneRepublic", sort: "chart_position", limit: 10, debug: true })],
+  ["blurbs by artist",    () => blurbs({ artist: "Taylor Swift", debug: true })],
+  ["blurbs by song",      () => blurbs({ artist: "U2", title: "One", debug: true })],
+  ["calendar categories", () => calendar({ action: "categories", q: "album", limit: 20, offset: 0, debug: true })],
+  ["calendar timeline",   () => calendar({ action: "timeline", timeline_slug: "nirvana", limit: 20, offset: 0, debug: true })],
+  ["calendar entries",    () => calendar({ action: "entries", month: 9, day: 24, year: 1991, sort: "date_asc", limit: 20, offset: 0, debug: true })],
 ];
 
 for (const [label, run] of examples) {
@@ -148,7 +158,7 @@ export async function factsForTrack(artist, title) {
 Notes:
 
 - **`facts.items` values are HTML** — they contain inline `<i>` and `<b>`. Render as HTML (sanitize against your own allowlist if you're strict); there is no plain-text twin field.
-- **Optional fields are omitted, not `null`.** Use optional chaining for `song.youtube?.url`, `song.lyrics?.writers`, `song.album`, `song.charts?.us`.
+- **Optional fields are omitted, not `null`.** Use optional chaining for `song.youtube?.url`, `song.categories`, `song.album`, `song.charts?.us`, `entry.main_image_url`, and `entry.extended_entry_url`.
 - **Cache `song.id`** against your own catalog ID, then call `songfacts({ id })` from then on — exact and immune to matcher variance.
 
 ## Paging through facts
