@@ -2,7 +2,7 @@
 
 Worked patterns for the product surfaces the Songfacts API is built for. Each one shows the calls involved, what you get back, and the practical notes that only show up once you've built it.
 
-**Available today** with `/v5/songfacts` and `/v5/artistfacts`:
+**Available today** with `/v5/songfacts`, `/v5/artistfacts`, `/v5/categories`, `/v5/blurbs`, and `/v5/calendar`:
 
 - [1. Now Playing enrichment](#1-now-playing-enrichment)
 - [2. Song detail pages](#2-song-detail-pages)
@@ -11,12 +11,15 @@ Worked patterns for the product surfaces the Songfacts API is built for. Each on
 - [5. Radio, podcast and voice segments](#5-radio-podcast-and-voice-segments)
 - [6. Newsletters and social content](#6-newsletters-and-social-content)
 
-**Coming with the next endpoint families:**
+**Also available with the v1.1 endpoint families:**
 
 - [7. Rabbit-hole discovery (Categories)](#7-rabbit-hole-discovery-categories)
 - [8. This day in music (Calendar)](#8-this-day-in-music-calendar)
-- [9. Quotes modules](#9-quotes-modules)
 - [10. Compact surfaces (Blurbs)](#10-compact-surfaces-blurbs)
+
+**Still ahead:**
+
+- [9. Quotes modules](#9-quotes-modules)
 - [11. Trivia and games](#11-trivia-and-games)
 
 Also: [Implementation patterns that apply everywhere](#implementation-patterns-that-apply-everywhere)
@@ -61,7 +64,7 @@ Then page through the rest as the user scrolls:
 { "id": 12345, "limit": 10, "offset": 10 }
 ```
 
-**What you get in one response:** the facts, plus everything needed to build the page frame — `song.title`, `song.url`, nested `song.artist` (name and link), `song.youtube.url` for an embed, `song.lyrics.writers` for a credits line, and optional `album`, `release_year` and `charts`.
+**What you get in one response:** the facts, plus everything needed to build the page frame — `song.title`, `song.url`, nested `song.artist` (name and link), `song.youtube.url` for an embed, and optional `album`, `release_year`, `charts`, `featured_artists`, and `categories`.
 
 **Notes:**
 
@@ -134,7 +137,7 @@ Or, arriving from a song: `{ "id": <song.artist.id> }`.
 
 ---
 
-The following four families exist in the Songfacts archive and are in progress as API endpoints. Content samples are live now; request and response contracts are not final. See the [roadmap](roadmap.md).
+The following sections describe endpoint families that are now live in v1.1, plus the still-planned families that follow. See the [roadmap](roadmap.md).
 
 ## 7. Rabbit-hole discovery (Categories)
 
@@ -151,9 +154,17 @@ Songfacts has **over 800 curated categories** that connect songs by theme — th
 
 Others in the set: songs written by Bruno Mars · songs produced by T Bone Burnett · songs covered by Bruce Springsteen · songs featuring a cowbell · examples of glam rock · songs inspired by Emily Brontë's *Wuthering Heights* · songs about a fresh start · songs that won Oscars · songs that became hits when re-released · songs used in Spider-Man · songs with city names in the title · songs with videos directed by Hannah Lux Davis · songs popular at Halloween · songs that are spoofs, satires or parodies.
 
-**Planned capability:** list categories, and list songs by category ID or category name. The endpoint family will use an explicit `action` field in the JSON body for multi-operation families.
+**The calls:** browse or search the category list with `action: "list"`, then resolve songs for a chosen category with `action: "songs"`.
 
-**Preview it today:** successful `songfacts` matches may already include an optional `categories` field on the song object. [Live samples](https://api.songfacts.com/categories-examples)
+```json
+{ "action": "list", "q": "ryan tedder", "sort": "relevance", "limit": 10 }
+```
+
+```json
+{ "action": "songs", "category_slug": "songs-written-by-ryan-tedder", "artist": "OneRepublic", "sort": "chart_position", "limit": 10 }
+```
+
+**What you get:** either a paginated `categories` list for browse/search, or a matched `category` plus paginated `songs` with artist, chart, and release-date context. [Live samples](https://api.songfacts.com/categories-examples)
 
 ## 8. This day in music (Calendar)
 
@@ -175,7 +186,21 @@ Songfacts has been building its music history calendar since 2007. The value pro
 >
 > **February 4, 2024** — Miley Cyrus wins her first pair of Grammys when "Flowers" takes Record Of The Year and Best Pop Solo Performance.
 
-**Planned capability:** events by date and by artist. Ideal for a widget that gives users a reason to open the app daily. [Live samples](https://api.songfacts.com/music-history-calendar-examples)
+**The calls:** browse categories or timelines, or fetch entries for a given date.
+
+```json
+{ "action": "categories", "q": "album", "limit": 20 }
+```
+
+```json
+{ "action": "timeline", "timeline_slug": "nirvana", "limit": 20 }
+```
+
+```json
+{ "action": "entries", "month": 9, "day": 24, "year": 1991, "filter_event_of_the_day": true, "limit": 20 }
+```
+
+**What you get:** category browse/search results, timeline browse/search results, or matched `entries` enriched with `event_of_the_day`, `featured_event`, and optional `extended_entry_url`, `main_image_url`, related categories, and related timelines. Ideal for a widget that gives users a reason to open the app daily. [Live samples](https://api.songfacts.com/music-history-calendar-examples)
 
 ## 9. Quotes modules
 
@@ -204,7 +229,18 @@ Blurbs are compressed versions of select Songfacts and Artistfacts, **under 280 
 
 > The Lumineers crashed the nu-folk revival of the 2010s with their stomp-and-clap anthem "Ho Hey." The deceptively upbeat song about unrequited love introduced a winning formula of pairing melancholy lyrics with feel-good melodies.
 
-Available for both songs and artists. Until the endpoint ships, `limit: 1` on a full facts lookup plus your own truncation is the closest approximation — but blurbs are editorially compressed, not cut off mid-sentence. [Live samples](https://api.songfacts.com/blurbs-examples)
+**The calls:** use artist-only lookup for artist blurbs, or artist-plus-title lookup for song blurbs.
+
+```json
+{ "artist": "Taylor Swift" }
+```
+
+```json
+{ "artist": "U2", "title": "One" }
+```
+
+Available for both songs and artists. A song-mode request falls back to the matched artist blurb when a song match exists but no song blurb is available. [Live samples](https://api.songfacts.com/blurbs-examples)
+
 
 ## 11. Trivia and games
 
@@ -247,6 +283,7 @@ Trivia is **customized for each client** — difficulty, era, genre focus and fo
 ## Next reads
 
 - [`/v5/songfacts`](endpoints/songfacts.md) · [`/v5/artistfacts`](endpoints/artistfacts.md)
+- [`/v5/categories`](endpoints/categories.md) · [`/v5/blurbs`](endpoints/blurbs.md) · [`/v5/calendar`](endpoints/calendar.md)
 - [Matching & Scores](matching.md) — get name lookups landing reliably
 - [Roadmap](roadmap.md) — what's coming and when to plan for it
 - [Code samples](../examples/README.md)

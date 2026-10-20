@@ -1,6 +1,6 @@
 # Requests & Responses
 
-The shared conventions behind both endpoints: what you may send, how it's validated, and the shape of what comes back.
+The shared conventions behind the Songfacts API v5 endpoints: what you may send, how it's validated, and the shape of what comes back.
 
 - [Request rules](#request-rules)
 - [Lookup fields](#lookup-fields)
@@ -23,15 +23,24 @@ The shared conventions behind both endpoints: what you may send, how it's valida
 | Content type | `application/json`. Anything else returns `request` / `invalid_content_type`. |
 | Body | A single JSON object. Malformed JSON returns `request` / `invalid_json`. |
 | Field naming | `snake_case`. |
+| Accepted fields | Endpoint-specific, and for action-based families sometimes action-specific. Unknown fields are rejected rather than ignored. |
 | Unknown fields | **Rejected.** Any field not in the accepted set fails the request with `invalid_fields`. Don't pass through your own tracking keys. |
 
-## Lookup fields
+## Lookup and action fields
 
 | Field | Type | Endpoint | Notes |
 | --- | --- | --- | --- |
 | `id` | integer | both | Public ID. Maps internally to the song ID for `songfacts` and the artist ID for `artistfacts`. Exact lookup only. |
 | `artist` | string | both | Artist name. |
 | `title` | string | `songfacts` only | Song title. Sending it to `artistfacts` is invalid. |
+| `action` | string | `categories`, `calendar` | Selects the request mode inside the endpoint family. |
+
+Action-based families in v1.1:
+
+- `categories`: `list`, `songs`
+- `calendar`: `categories`, `entries`, `timeline`
+
+Endpoint-specific identifiers such as `category_id`, `category_slug`, `timeline_id`, `timeline_slug`, and date fields such as `day`, `month`, and `year` are documented in the relevant endpoint references rather than repeated exhaustively here.
 
 Rules:
 
@@ -46,11 +55,17 @@ Rules:
 
 | Field | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `limit` | integer | `10` | Maximum `50`. Values above the max are silently clamped and reported via `limit_clamped`. `limit = 0` is invalid. |
-| `offset` | integer | `0` | `0` is valid. Negative is invalid. An out-of-range offset returns a valid empty page. |
-| `showall` | boolean | — | Returns the full fact set. May be restricted by access policy (`showall_not_allowed`). Cannot be combined with `limit` or `offset`. |
+| `limit` | integer | endpoint-specific | Maximum `50` on fact and category endpoints. `songfacts`, `artistfacts`, and `categories` default to `10`; `calendar` defaults to `20`. `limit = 0` is invalid. |
+| `offset` | integer | `0` | `0` is valid. Negative is invalid. An out-of-range offset returns a valid empty page where the endpoint supports pagination. |
+| `showall` | boolean | — | Returns the full result set where supported. May be restricted by access policy (`showall_not_allowed`). Cannot be combined with `limit` or `offset`. |
 
-Pagination is on by default. Requesting without `limit` applies the default of `10`, and that counts as an internal clamp — you'll see `limit_clamped: true`.
+Pagination support in v1.1:
+
+- `songfacts` and `artistfacts`: default `limit = 10`, `offset = 0`
+- `categories action = list`: always paginated, default `limit = 10`, `offset = 0`, `showall` not allowed
+- `categories action = songs`: default `limit = 10`, `offset = 0`, `showall` allowed
+- `calendar`: default `limit = 20`, `offset = 0`, `showall = false`
+- `blurbs`: `limit`, `offset`, and `showall` are all rejected
 
 ## Diagnostics field
 
@@ -163,17 +178,17 @@ Artist candidates carry `id`, `artist`, `match_score` and `match_method`. **ID n
 
 ## The matched object
 
-Matched data lives under an endpoint-specific top-level key — `song` or `artist` — never under a generic `match`. Request state stays in `meta`; it is not mixed into the matched object.
+Matched data lives under endpoint-specific top-level keys — `song`, `artist`, `category`, `timeline`, `categories`, `songs`, `entries`, or related payload objects depending on the endpoint and action. Request state stays in `meta`; it is not mixed into the matched object.
 
-Inside the matched object you get, together:
+Inside a successful matched response you get one of these patterns:
 
-- **Identity** — `id`, `title` / `name`, `slug`
-- **Canonical URL** — the public Songfacts page for the entity, suitable for attribution links
-- **Enrichment** — nested artist, YouTube, lyrics metadata and other denormalized fields, where available
-- **`pagination`** — the applied paging state
-- **`facts`** — the payload you came for
+- `songfacts` / `artistfacts`: identity, canonical URL, optional enrichments, `pagination`, and `facts`
+- `categories action = list`: root `categories` array plus `pagination`, and optionally a root `type` object when narrowed by type
+- `categories action = songs`: matched `category`, `songs` array, and `pagination`
+- `blurbs`: matched `song` or `artist` object with one `blurb` field instead of a `facts.items` object
+- `calendar`: browse arrays such as `categories` or `timelines`, or matched context objects such as `category`, `timeline`, or `date`, plus `entries` and `pagination` as appropriate
 
-Optional enrichments are **omitted when unavailable** rather than returned as `null`, so check for key presence. Field-by-field references: [`/v5/songfacts`](endpoints/songfacts.md) · [`/v5/artistfacts`](endpoints/artistfacts.md).
+Optional enrichments are **omitted when unavailable** rather than returned as `null`, so check for key presence. Field-by-field references: [`/v5/songfacts`](endpoints/songfacts.md) · [`/v5/artistfacts`](endpoints/artistfacts.md) · [`/v5/categories`](endpoints/categories.md) · [`/v5/blurbs`](endpoints/blurbs.md) · [`/v5/calendar`](endpoints/calendar.md).
 
 ## The facts payload
 
@@ -201,7 +216,7 @@ Two integration notes:
 
 ## Pagination in the response
 
-`pagination` sits inside the matched object and is always present on a successful match.
+For `songfacts` and `artistfacts`, `pagination` sits inside the matched object and is always present on a successful match.
 
 ```json
 "pagination": {
@@ -222,12 +237,14 @@ Two integration notes:
 | `total` | Full available fact count before pagination |
 | `not_displayed` | Remaining facts not in this response. Always present, even when `0`. |
 | `showall` | Included only when `showall` was sent in the request |
-| `limit_clamped` | Included only when the server clamped the limit — including when you omitted `limit` and the default `10` was applied |
+| `limit_clamped` | Included only when the server clamped the limit — including when you omitted `limit` and the default was applied |
 
 Behavior notes:
 
 - With `showall: true`, pagination is still returned and reflects the full returned set.
 - An out-of-range `offset` is a **successful match** with `displayed: 0` and no `facts` key — not an error.
+
+Other endpoint families reuse the same basic pagination ideas but not always the same location or field set. `categories` and `calendar` return pagination at the response root. `calendar` pagination includes `showall` and `offset_out_of_range` instead of `limit_clamped`.
 
 ## The debug object
 
@@ -246,8 +263,8 @@ Requested with `"debug": true`, returned at the response root:
 
 | Field | Meaning |
 | --- | --- |
-| `endpoint` | `songfacts` or `artistfacts` |
-| `lookup_mode` | `id` or `name` |
+| `endpoint` | Endpoint family such as `songfacts`, `artistfacts`, `categories`, `blurbs`, or `calendar` |
+| `lookup_mode` | Endpoint-specific mode string, for example `id`, `name`, or an action-driven browse/lookup mode |
 | `normalized_input` | The internally normalized values actually used for lookup — never your raw input. The single most useful field when a lookup surprises you. |
 | `cache_hit` | Boolean. Shared match caching is currently suspended, so this remains `false` in the live runtime. |
 | `candidate_count` | Candidates considered. For ID lookups: `1` when found, `0` when not. Omitted when there were no candidates at all, while the rest of `debug` is kept. |
@@ -264,3 +281,4 @@ Rules:
 - [Matching & Scores](matching.md)
 - [Error Handling](errors.md)
 - [`/v5/songfacts`](endpoints/songfacts.md) · [`/v5/artistfacts`](endpoints/artistfacts.md)
+- [`/v5/categories`](endpoints/categories.md) · [`/v5/blurbs`](endpoints/blurbs.md) · [`/v5/calendar`](endpoints/calendar.md)

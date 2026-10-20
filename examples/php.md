@@ -3,7 +3,7 @@
 A complete Songfacts API v5 client in PHP. No dependencies beyond the cURL extension. **PHP 7.4+.**
 
 - [The client](#the-client)
-- [The four core flows](#the-four-core-flows)
+- [The core and v1.1 flows](#the-core-and-v11-flows)
 - [Reading the result](#reading-the-result)
 - [Paging through facts](#paging-through-facts)
 - [Verifying your signing](#verifying-your-signing)
@@ -117,6 +117,24 @@ function sf_artistfacts(array $payload): array
 {
     return sf_call('/v5/artistfacts', $payload);
 }
+
+/** @param array<string,mixed> $payload @return array<string,mixed> */
+function sf_categories(array $payload): array
+{
+    return sf_call('/v5/categories', $payload);
+}
+
+/** @param array<string,mixed> $payload @return array<string,mixed> */
+function sf_blurbs(array $payload): array
+{
+    return sf_call('/v5/blurbs', $payload);
+}
+
+/** @param array<string,mixed> $payload @return array<string,mixed> */
+function sf_calendar(array $payload): array
+{
+    return sf_call('/v5/calendar', $payload);
+}
 ```
 
 Two PHP-specific notes:
@@ -124,7 +142,7 @@ Two PHP-specific notes:
 - **`json_encode` and empty arrays.** An empty PHP array encodes as `[]`, which is not a valid request body — the client above converts it to `{}`. Be careful with integer-keyed arrays generally; build payloads as explicit string-keyed maps such as `['artist' => 'U2', 'title' => 'One']`.
 - **No `curl_close()`.** It's deprecated as of PHP 8.5 and has had no effect since 8.0. The handle is released when it goes out of scope.
 
-## The four core flows
+## The core and v1.1 flows
 
 `run_examples.php`
 
@@ -140,6 +158,13 @@ $examples = [
     'songfacts by name'   => fn(): array => sf_songfacts(['artist' => 'U2', 'title' => 'One']),
     'artistfacts by id'   => fn(): array => sf_artistfacts(['id' => 24]),
     'artistfacts by name' => fn(): array => sf_artistfacts(['artist' => 'Metallica']),
+    'categories list'     => fn(): array => sf_categories(['action' => 'list', 'q' => 'ryan tedder', 'sort' => 'relevance', 'limit' => 10, 'debug' => true]),
+    'categories songs'    => fn(): array => sf_categories(['action' => 'songs', 'category_slug' => 'songs-written-by-ryan-tedder', 'artist' => 'OneRepublic', 'sort' => 'chart_position', 'limit' => 10, 'debug' => true]),
+    'blurbs by artist'    => fn(): array => sf_blurbs(['artist' => 'Taylor Swift', 'debug' => true]),
+    'blurbs by song'      => fn(): array => sf_blurbs(['artist' => 'U2', 'title' => 'One', 'debug' => true]),
+    'calendar categories' => fn(): array => sf_calendar(['action' => 'categories', 'q' => 'album', 'limit' => 20, 'offset' => 0, 'debug' => true]),
+    'calendar timeline'   => fn(): array => sf_calendar(['action' => 'timeline', 'timeline_slug' => 'nirvana', 'limit' => 20, 'offset' => 0, 'debug' => true]),
+    'calendar entries'    => fn(): array => sf_calendar(['action' => 'entries', 'month' => 9, 'day' => 24, 'year' => 1991, 'sort' => 'date_asc', 'limit' => 20, 'offset' => 0, 'debug' => true]),
 ];
 
 foreach ($examples as $label => $run) {
@@ -207,7 +232,7 @@ function sf_facts_for_track(string $artist, string $title): ?array
 Notes:
 
 - **`facts.items` values are HTML** — they contain inline `<i>` and `<b>`. Echo them as HTML (do not `htmlspecialchars()` them, or the markup will show as literal text); sanitize against your own allowlist if you're strict. There is no plain-text twin field.
-- **Optional fields are omitted, not `null`.** Use `isset()` / `??` for `youtube`, `lyrics`, `album`, `charts`.
+- **Optional fields are omitted, not `null`.** Use `isset()` / `??` for `youtube`, `categories`, `album`, `charts`, `main_image_url`, and `extended_entry_url`.
 - **Cache `$song['id']`** against your own catalog ID, then use `sf_songfacts(['id' => $id])` from then on — exact and immune to matcher variance.
 
 ## Paging through facts

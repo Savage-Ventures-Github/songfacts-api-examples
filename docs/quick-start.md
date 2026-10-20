@@ -56,7 +56,25 @@ Requests are `POST` with `Content-Type: application/json`. Field names are `snak
 { "artist": "Metallica" }
 ```
 
-Optional on all four: `limit`, `offset`, `showall`, `debug`. See [Requests & Responses](requests-and-responses.md).
+**Categories list/search**
+
+```json
+{ "action": "list", "q": "ryan tedder", "sort": "relevance", "limit": 10 }
+```
+
+**Blurbs by artist and title**
+
+```json
+{ "artist": "U2", "title": "One" }
+```
+
+**Calendar entries by date**
+
+```json
+{ "action": "entries", "month": 9, "day": 24, "year": 1991, "limit": 20 }
+```
+
+Optional fields vary by endpoint. `songfacts` and `artistfacts` support `limit`, `offset`, `showall`, and `debug`; `categories` and `calendar` add action-specific fields; `blurbs` supports `debug` but rejects pagination fields (`limit`, `offset`, `showall`). See [Requests & Responses](requests-and-responses.md).
 
 ## 3. Build the canonical string
 
@@ -112,7 +130,7 @@ Working, signed versions of this in four languages: [examples/](../examples/READ
 ```text
 meta.status = "ok"    → the request was accepted and processed
 meta.status = "fail"  → the request was rejected; see meta.error
-meta.matched = true   → a record was found; it's under `song` or `artist`
+meta.matched = true   → a record was found; inspect the endpoint-specific payload
 meta.matched = false  → nothing cleared the match threshold. This is NOT an error.
 ```
 
@@ -165,6 +183,12 @@ Three things to internalize:
 
 Branch on `meta.status` first, then `meta.matched`. See [Error Handling](errors.md).
 
+For the newer endpoint families, successful matches use endpoint-specific payloads:
+
+- `categories` returns category browse results under `categories`, or a matched `category` plus `songs`
+- `blurbs` returns a matched `song` or `artist` object with a single `blurb` field
+- `calendar` returns `categories`, `timelines`, or `entries` plus any matched `category`, `timeline`, or `date` context
+
 ## 7. Turn on diagnostics
 
 Add `"debug": true` to any request body and the response gains a root-level `debug` object explaining how the match was reached:
@@ -191,5 +215,6 @@ Treat `debug` as diagnostic output, not a versioned contract. Log it; don't bran
 - [Authentication & Signing](authentication.md) — get signing right the first time
 - [Requests & Responses](requests-and-responses.md) — every field, every validation rule
 - [`/v5/songfacts`](endpoints/songfacts.md) · [`/v5/artistfacts`](endpoints/artistfacts.md)
+- [`/v5/categories`](endpoints/categories.md) · [`/v5/blurbs`](endpoints/blurbs.md) · [`/v5/calendar`](endpoints/calendar.md)
 - [Error Handling](errors.md)
 - [Use Cases](use-cases.md) — what to build with it

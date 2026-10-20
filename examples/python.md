@@ -3,7 +3,7 @@
 A complete Songfacts API v5 client in Python. **Standard library only** — no `requests`, no SDK. Python 3.8+.
 
 - [The client](#the-client)
-- [The four core flows](#the-four-core-flows)
+- [The core and v1.1 flows](#the-core-and-v11-flows)
 - [Reading the result](#reading-the-result)
 - [Paging through facts](#paging-through-facts)
 - [Verifying your signing](#verifying-your-signing)
@@ -85,22 +85,41 @@ def songfacts(**payload):
 
 def artistfacts(**payload):
     return call("/v5/artistfacts", payload)
+
+
+def categories(**payload):
+    return call("/v5/categories", payload)
+
+
+def blurbs(**payload):
+    return call("/v5/blurbs", payload)
+
+
+def calendar(**payload):
+    return call("/v5/calendar", payload)
 ```
 
-## The four core flows
+## The core and v1.1 flows
 
 `run_examples.py`
 
 ```python
 import json
 
-from songfacts_client import artistfacts, songfacts
+from songfacts_client import artistfacts, blurbs, calendar, categories, songfacts
 
 examples = [
     ("songfacts by id",     lambda: songfacts(id=933)),
     ("songfacts by name",   lambda: songfacts(artist="U2", title="One")),
     ("artistfacts by id",   lambda: artistfacts(id=24)),
     ("artistfacts by name", lambda: artistfacts(artist="Metallica")),
+    ("categories list",     lambda: categories(action="list", q="ryan tedder", sort="relevance", limit=10, debug=True)),
+    ("categories songs",    lambda: categories(action="songs", category_slug="songs-written-by-ryan-tedder", artist="OneRepublic", sort="chart_position", limit=10, debug=True)),
+    ("blurbs by artist",    lambda: blurbs(artist="Taylor Swift", debug=True)),
+    ("blurbs by song",      lambda: blurbs(artist="U2", title="One", debug=True)),
+    ("calendar categories", lambda: calendar(action="categories", q="album", limit=20, offset=0, debug=True)),
+    ("calendar timeline",   lambda: calendar(action="timeline", timeline_slug="nirvana", limit=20, offset=0, debug=True)),
+    ("calendar entries",    lambda: calendar(action="entries", month=9, day=24, year=1991, sort="date_asc", limit=20, offset=0, debug=True)),
 ]
 
 for label, run in examples:
@@ -162,7 +181,7 @@ def facts_for_track(artist, title):
 Notes:
 
 - **`facts.items` values are HTML** — they contain inline `<i>` and `<b>`. Render as HTML; there's no plain-text twin field. For text-to-speech, strip tags.
-- **Optional fields are omitted, not `null`.** Use `.get()` / key checks for `youtube`, `lyrics`, `album`, `charts` and friends.
+- **Optional fields are omitted, not `null`.** Use `.get()` / key checks for `youtube`, `categories`, `album`, `charts`, `main_image_url`, `extended_entry_url`, and friends.
 - **Cache `song["id"]`** against your own catalog ID, then use `songfacts(id=...)` from then on — exact and immune to matcher variance.
 
 ## Paging through facts
