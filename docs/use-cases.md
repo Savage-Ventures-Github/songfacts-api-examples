@@ -36,7 +36,7 @@ Also: [Implementation patterns that apply everywhere](#implementation-patterns-t
 { "artist": "Electric Light Orchestra", "title": "Don't Bring Me Down", "limit": 1 }
 ```
 
-**What you render:** the top item from `song.facts.items` — the newest fact, which is generally the most current and most interesting.
+**What you render:** the top item from `song.facts.items` — the oldest fact by default, which establishes the story before later entries build on it. Request `"sort": "newest"` if the surface should lead with recent developments.
 
 > Wondering why Jeff Lynne repeatedly sings the word "groose" after the song's title line? Apparently it was a made-up place-keeper word to fill a gap in the vocals when he was improvising the lyrics. When the German engineer Reinhold Mack heard the ELO frontman's demo, he asked Lynne how he knew "gruss" means "greetings" in his country's language. Upon learning the German meaning, Lynne decided to leave it in.
 
@@ -131,7 +131,7 @@ Or, arriving from a song: `{ "id": <song.artist.id> }`.
 
 **Notes:**
 
-- The newest fact for a song is often tied to something recent — a re-release, a sync placement, a tour announcement — which makes newest-first ordering naturally topical.
+- Request `"sort": "newest"` when a newsletter should lead with a recent development such as a re-release, sync placement, or tour announcement; the default is oldest-first.
 - Fact HTML drops cleanly into email templates; check that your email builder doesn't strip `<i>` / `<b>`.
 - Attribution links back to `song.url` drive traffic and satisfy your license terms.
 

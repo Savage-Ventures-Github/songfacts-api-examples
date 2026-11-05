@@ -163,11 +163,11 @@ curl -sS -X POST "https://api.songfacts.com${API_PATH}" \
 # { "status": "ok", "matched": true }
 
 # just the newest fact
-./sf_call.sh /v5/songfacts '{"id":933,"limit":1}' \
+./sf_call.sh /v5/songfacts '{"id":933,"limit":1,"sort":"newest"}' \
   | jq -r '.song.facts.items | to_entries[0].value'
 
 # facts newest-first, as id + text
-./sf_call.sh /v5/songfacts '{"id":933}' \
+./sf_call.sh /v5/songfacts '{"id":933,"sort":"newest"}' \
   | jq -r '.song.facts.items | to_entries | sort_by(.key | tonumber) | reverse | .[] | "\(.key)\t\(.value)"'
 
 # how many facts exist in total

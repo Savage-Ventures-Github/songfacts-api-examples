@@ -144,12 +144,12 @@ export async function factsForTrack(artist, title) {
 
   const song = result.song;
 
-  // facts.items is keyed by fact ID; values are HTML; canonical order is
-  // newest-first (descending fact ID). Sort explicitly rather than trusting
-  // object key order.
+  // facts.items is keyed by fact ID; values are HTML. Sort numerically rather
+  // than trusting JSON object key order; pagination.sort reports the direction.
+  const direction = song.pagination.sort === "newest" ? -1 : 1;
   const facts = Object.entries(song.facts.items)
     .map(([id, html]) => ({ id: Number(id), html }))
-    .sort((a, b) => b.id - a.id);
+    .sort((a, b) => direction * (a.id - b.id));
 
   return { facts, attributionUrl: song.url };
 }
@@ -164,18 +164,18 @@ Notes:
 ## Paging through facts
 
 ```js
-/** Yields every fact for a song, newest first. */
-export async function* allFacts(songId, pageSize = 50) {
+/** Yields every fact for a song in the selected order. */
+export async function* allFacts(songId, pageSize = 50, sort = "oldest") {
   let offset = 0;
 
   while (true) {
-    const result = await call("/v5/songfacts", { id: songId, limit: pageSize, offset });
+    const result = await call("/v5/songfacts", { id: songId, limit: pageSize, offset, sort });
     const song = result.song;
     const page = song.facts?.items ?? {};   // omitted when offset is past the end
 
     for (const { id, html } of Object.entries(page)
       .map(([id, html]) => ({ id: Number(id), html }))
-      .sort((a, b) => b.id - a.id)) {
+      .sort((a, b) => (sort === "newest" ? -1 : 1) * (a.id - b.id))) {
       yield { id, html };
     }
 

@@ -57,6 +57,7 @@ Rules:
 | --- | --- | --- | --- |
 | `limit` | integer | endpoint-specific | Maximum `50` on fact and category endpoints. `songfacts`, `artistfacts`, and `categories` default to `10`; `calendar` defaults to `20`. `limit = 0` is invalid. |
 | `offset` | integer | `0` | `0` is valid. Negative is invalid. An out-of-range offset returns a valid empty page where the endpoint supports pagination. |
+| `sort` | string | `oldest` on `songfacts` / `artistfacts` | Fact endpoints accept `oldest` or `newest`, sorted by fact ID before pagination. Other endpoints use their own documented sort values. |
 | `showall` | boolean | — | Returns the full result set where supported. May be restricted by access policy (`showall_not_allowed`). Cannot be combined with `limit` or `offset`. |
 
 Pagination support in v1.1:
@@ -108,9 +109,10 @@ All field problems in a request are reported **together** in a single response �
       "code": "invalid_fields",
       "fields": {
         "title": "required",
-        "limit": "invalid"
+        "limit": "invalid",
+        "sort": "invalid"
       },
-      "expected_fields": ["artist", "title", "id", "limit", "offset", "showall", "debug"]
+      "expected_fields": ["artist", "title", "id", "sort", "limit", "offset", "showall", "debug"]
     }
   }
 }
@@ -205,13 +207,13 @@ Optional enrichments are **omitted when unavailable** rather than returned as `n
 | --- | --- |
 | Structure | An object keyed by fact ID. The key is the integer fact row ID, serialized as a JSON string. |
 | Values | **HTML.** Facts contain inline markup such as `<i>` and `<b>`, and are meant to be rendered as HTML. There is no duplicate plain-text field. |
-| Ordering | Newest to oldest — descending fact ID. Clients cannot change the sort. |
+| Ordering | Oldest to newest by default — ascending fact ID. Set `sort` to `newest` for descending fact ID. The effective value is returned as `pagination.sort`. |
 | Content | Full facts, not previews or truncated teasers. |
 | Absence | `facts` is present on successful matches, with one exception: when `offset` is past the end of the set, you get a valid response with `displayed: 0` and **no** `facts` key. |
 
 Two integration notes:
 
-- **JSON objects don't guarantee key order in every language.** If you need the canonical newest-first order, sort the keys as integers descending after parsing — don't rely on your JSON library preserving insertion order.
+- **JSON objects don't guarantee key order in every language.** Sort fact keys as integers after parsing: ascending for `pagination.sort = "oldest"`, descending for `"newest"`. Don't rely on your JSON library preserving insertion order.
 - **Fact IDs are stable identifiers.** Use them for deduplication, "show me a fact I haven't shown this user yet" rotation, caching, and editorial flagging.
 
 ## Pagination in the response
@@ -222,6 +224,7 @@ For `songfacts` and `artistfacts`, `pagination` sits inside the matched object a
 "pagination": {
   "limit": 10,
   "offset": 0,
+  "sort": "oldest",
   "displayed": 10,
   "total": 23,
   "not_displayed": 13,

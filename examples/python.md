@@ -166,14 +166,13 @@ def facts_for_track(artist, title):
 
     song = result["song"]
 
-    # facts.items is keyed by fact ID; values are HTML; canonical order is
-    # newest-first (descending fact ID). Sort explicitly rather than trusting
-    # JSON key order.
+    # facts.items is keyed by fact ID; values are HTML. Sort numerically rather
+    # than trusting JSON key order; pagination.sort reports the direction.
     facts = [
         (int(fact_id), html)
         for fact_id, html in song["facts"]["items"].items()
     ]
-    facts.sort(key=lambda pair: pair[0], reverse=True)
+    facts.sort(key=lambda pair: pair[0], reverse=(song["pagination"].get("sort", "oldest") == "newest"))
 
     return facts, song["url"]
 ```
@@ -187,15 +186,15 @@ Notes:
 ## Paging through facts
 
 ```python
-def all_facts(song_id, page_size=50):
-    """Yield every fact for a song, newest first."""
+def all_facts(song_id, page_size=50, sort="oldest"):
+    """Yield every fact for a song in the selected order."""
     offset = 0
     while True:
-        result = call("/v5/songfacts", {"id": song_id, "limit": page_size, "offset": offset})
+        result = call("/v5/songfacts", {"id": song_id, "limit": page_size, "offset": offset, "sort": sort})
         song = result["song"]
         page = song.get("facts", {}).get("items", {})   # omitted when offset is past the end
 
-        for fact_id in sorted(page, key=int, reverse=True):
+        for fact_id in sorted(page, key=int, reverse=(sort == "newest")):
             yield int(fact_id), page[fact_id]
 
         pagination = song["pagination"]

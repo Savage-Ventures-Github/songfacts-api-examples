@@ -31,7 +31,7 @@ This repository is the public companion to [api.songfacts.com](https://api.songf
 
 Songfacts has been building its database of song and artist stories since 1999, and is now owned by [American Songwriter](https://americansongwriter.com/). The API exposes that editorial archive as clean, structured JSON.
 
-You send an artist and title (or a Songfacts ID). The API resolves it to the right record — exact match or fuzzy match, with a confidence score you can see — and returns the full set of facts for it, newest first, as display-ready HTML.
+You send an artist and title (or a Songfacts ID). The API resolves it to the right record — exact match or fuzzy match, with a confidence score you can see — and returns the full set of facts for it, oldest first by default or newest first when requested, as display-ready HTML.
 
 The v5 API is designed for server-to-server integration:
 
@@ -42,7 +42,7 @@ The v5 API is designed for server-to-server integration:
 | **Auth** | `client_id` + shared secret, HMAC-SHA256 request signing, replay-protected with a timestamp and nonce. |
 | **HTTP status** | Always `200`. Success and failure are expressed in the JSON body under `meta`. |
 | **Cardinality** | One best accepted match per lookup — not a list of guesses to disambiguate on your side. |
-| **Facts format** | HTML strings keyed by fact ID, ordered newest to oldest, paginated. |
+| **Facts format** | HTML strings keyed by fact ID, oldest-first by default or newest-first when requested, paginated. |
 
 ## Why the Data Is Different
 

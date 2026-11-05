@@ -43,6 +43,7 @@ If you already have a song from [`/v5/songfacts`](songfacts.md), its nested `son
 | `artist` | string | one of | — | Artist name |
 | `limit` | integer | no | `10` | Max `50`; clamped silently |
 | `offset` | integer | no | `0` | Out-of-range returns a valid empty page |
+| `sort` | string | no | `oldest` | `oldest` or `newest`; orders facts by fact ID before pagination |
 | `showall` | boolean | no | — | Full fact set. Not combinable with `limit` / `offset`. May be restricted per client. |
 | `debug` | boolean | no | — | Adds root `debug` diagnostics |
 
@@ -64,6 +65,7 @@ If you already have a song from [`/v5/songfacts`](songfacts.md), its nested `son
     "pagination": {
       "limit": 10,
       "offset": 0,
+      "sort": "oldest",
       "displayed": 10,
       "total": 27,
       "not_displayed": 17,
@@ -116,7 +118,7 @@ Optional fields are omitted when unavailable rather than returned as `null`.
 | `dates_of_existence` | string | Optional — active years for a band or act |
 | `members` | — | Optional lineup data |
 | `pagination` | object | Always present on a successful match — [field reference](../requests-and-responses.md#pagination-in-the-response) |
-| `facts.items` | object | Keyed by fact ID; values are **HTML**; ordered newest-first. Omitted when `offset` is out of range. |
+| `facts.items` | object | Keyed by fact ID; values are **HTML**; ordered according to `pagination.sort` (`oldest` is ascending fact ID; `newest` is descending). Omitted when `offset` is out of range. |
 
 > Note: the artist identity is `name`, not a flat `artist` string. (Earlier draft documentation showed a flat field; the live shape is `name` / `slug` / `url`.) The `best_candidate` object is the one place a public field is still called `artist` — see below.
 
@@ -162,7 +164,9 @@ Full reference: [Error Handling](../errors.md).
 
 Identical model to `songfacts`. Established artists carry long fact sets, and `total` / `not_displayed` tell you what remains.
 
-**Page 1** — `{"artist": "Metallica"}` → `limit: 10, offset: 0, displayed: 10, total: 27, not_displayed: 17`
+Facts are returned oldest-first by default, putting the foundational entry first. Send `"sort": "newest"` to put the newest entries first. Sorting is applied before `offset` and `limit`, including with `showall`.
+
+**Page 1** — `{"artist": "Metallica"}` → `sort: "oldest", limit: 10, offset: 0, displayed: 10, total: 27, not_displayed: 17`
 
 **Page 2** — `{"id": 24, "limit": 10, "offset": 10}` → `displayed: 10, not_displayed: 7`
 
