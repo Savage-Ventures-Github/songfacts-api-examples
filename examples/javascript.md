@@ -158,7 +158,7 @@ export async function factsForTrack(artist, title) {
 Notes:
 
 - **`facts.items` values are HTML** — they contain inline `<i>` and `<b>`. Render as HTML (sanitize against your own allowlist if you're strict); there is no plain-text twin field.
-- **Optional fields are omitted, not `null`.** Use optional chaining for `song.youtube?.url`, `song.categories`, `song.album`, `song.charts?.us`, `entry.main_image_url`, and `entry.extended_entry_url`.
+- **Optional fields are omitted, not `null`.** Use optional chaining for `song.youtube?.url`, `song.categories`, `song.album`, `song.charts?.us`, `entry.main_image_url`, `entry.extended_entry_url`, and `entry.artists`.
 - **Cache `song.id`** against your own catalog ID, then call `songfacts({ id })` from then on — exact and immune to matcher variance.
 
 ## Paging through facts

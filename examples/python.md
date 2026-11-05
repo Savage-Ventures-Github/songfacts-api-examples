@@ -180,7 +180,7 @@ def facts_for_track(artist, title):
 Notes:
 
 - **`facts.items` values are HTML** — they contain inline `<i>` and `<b>`. Render as HTML; there's no plain-text twin field. For text-to-speech, strip tags.
-- **Optional fields are omitted, not `null`.** Use `.get()` / key checks for `youtube`, `categories`, `album`, `charts`, `main_image_url`, `extended_entry_url`, and friends.
+- **Optional fields are omitted, not `null`.** Use `.get()` / key checks for `youtube`, `categories`, `album`, `charts`, `main_image_url`, `extended_entry_url`, `artists`, and friends.
 - **Cache `song["id"]`** against your own catalog ID, then use `songfacts(id=...)` from then on — exact and immune to matcher variance.
 
 ## Paging through facts

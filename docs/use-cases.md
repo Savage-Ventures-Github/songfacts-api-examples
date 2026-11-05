@@ -200,7 +200,7 @@ Songfacts has been building its music history calendar since 2007. The value pro
 { "action": "entries", "month": 9, "day": 24, "year": 1991, "filter_event_of_the_day": true, "limit": 20 }
 ```
 
-**What you get:** category browse/search results, timeline browse/search results, or matched `entries` enriched with `event_of_the_day`, `featured_event`, and optional `extended_entry_url`, `main_image_url`, related categories, and related timelines. Ideal for a widget that gives users a reason to open the app daily. [Live samples](https://api.songfacts.com/music-history-calendar-examples)
+**What you get:** category browse/search results, timeline browse/search results, or matched `entries` enriched with `event_of_the_day`, `featured_event`, and optional `extended_entry_url`, `main_image_url`, related categories, related timelines, and linked artists (`artists`, each with Songfacts artist `id` and `name`). Ideal for a widget that gives users a reason to open the app daily. [Live samples](https://api.songfacts.com/music-history-calendar-examples)
 
 ## 9. Quotes modules
 

@@ -35,6 +35,9 @@ Shared rules:
 - default pagination is `limit = 20`, `offset = 0`, `showall = false`
 - if `showall = true`, `limit` and `offset` must not be sent
 - calendar entry responses do not include YouTube or other video payloads
+- entries returned by `action = "entries"`, category content-list mode, or timeline content-list mode may include an `artists` array when linked Songfacts artists exist
+- each artist object contains `id` (the `sf_artists` ID) and `name`
+- entries without linked artists omit `artists`
 
 ## Action: `categories`
 
@@ -167,7 +170,13 @@ Entries by date:
         "day": 24
       },
       "extended_entry_url": "https://calendar.songfacts.com/september/24/12345",
-      "main_image_url": "https://img.songfacts.com/calendar/12345.jpg"
+      "main_image_url": "https://img.songfacts.com/calendar/12345.jpg",
+      "artists": [
+        {
+          "id": 54172,
+          "name": "Nirvana"
+        }
+      ]
     }
   ],
   "pagination": {
@@ -213,6 +222,16 @@ Behavior notes:
 - `extended_entry_url` is present only when an entry has both `title` and `description`
 - `main_image_url` is present only when an entry has both `title` and `description`, and the shared calendar image exists
 - related categories and timelines are returned only when mappings exist for that entry
+- related artists are returned in `artists` only when artist mappings exist; the array may contain multiple `{ "id", "name" }` objects
+
+Example `artists` value for an entry linked to two artists:
+
+```json
+[
+  { "id": 1001, "name": "Sample Artist One" },
+  { "id": 1002, "name": "Sample Artist Two" }
+]
+```
 
 ## Response: failure
 
