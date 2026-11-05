@@ -46,6 +46,7 @@ Exact lookup. No fallback to name matching. `id = 0` is invalid.
 | `title` | string | one of | — | Required with `artist` for name lookup |
 | `limit` | integer | no | `10` | Max `50`; clamped silently |
 | `offset` | integer | no | `0` | Out-of-range returns a valid empty page |
+| `sort` | string | no | `oldest` | `oldest` or `newest`; orders facts by fact ID before pagination |
 | `showall` | boolean | no | — | Full fact set. Not combinable with `limit` / `offset`. May be restricted per client. |
 | `debug` | boolean | no | — | Adds root `debug` diagnostics |
 
@@ -86,6 +87,7 @@ Type rules (clean integer strings, real booleans, unknown fields rejected): [Req
     "pagination": {
       "limit": 10,
       "offset": 0,
+      "sort": "newest",
       "displayed": 10,
       "total": 23,
       "not_displayed": 13,
@@ -103,6 +105,7 @@ Type rules (clean integer strings, real booleans, unknown fields rejected): [Req
     "normalized_input": {
       "artist": "utwo",
       "title": "on",
+      "sort": "newest",
       "limit": 10,
       "offset": 0
     },
@@ -175,7 +178,7 @@ Category display names are normalized before they are served by the API. For exa
 | Field | Notes |
 | --- | --- |
 | `pagination` | Always present on a successful match — [field reference](../requests-and-responses.md#pagination-in-the-response) |
-| `facts.items` | Object keyed by fact ID; values are **HTML**; ordered newest-first (descending fact ID). Omitted when `offset` is out of range. |
+| `facts.items` | Object keyed by fact ID; values are **HTML**; ordered according to `pagination.sort` (`oldest` is ascending fact ID; `newest` is descending). Omitted when `offset` is out of range. |
 
 ## Response: no match
 
@@ -241,9 +244,11 @@ Full reference: [Error Handling](../errors.md).
 
 Popular songs carry dozens of facts. `total` and `not_displayed` tell you what's left.
 
-**Page 1** — `{"artist": "U2", "title": "One"}` → `limit: 10, offset: 0, displayed: 10, total: 23, not_displayed: 13`
+Facts are returned oldest-first by default, putting the foundational entry first. Send `"sort": "newest"` to put the newest entries first. Sorting is applied before `offset` and `limit`, including with `showall`.
 
-**Page 2** — `{"id": 933, "limit": 10, "offset": 10}` → `displayed: 10, not_displayed: 3`
+**Page 1** — `{"artist": "U2", "title": "One"}` → `sort: "oldest", limit: 10, offset: 0, displayed: 10, total: 23, not_displayed: 13`
+
+**Page 2** — `{"id": 933, "limit": 10, "offset": 10}` → the next 10 facts in oldest-first order, `displayed: 10, not_displayed: 3`
 
 **Page 3** — `{"id": 933, "limit": 10, "offset": 20}` → `displayed: 3, not_displayed: 0`
 

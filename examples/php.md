@@ -220,10 +220,14 @@ function sf_facts_for_track(string $artist, string $title): ?array
 
     $song = $result['song'];
 
-    // facts.items is keyed by fact ID; values are HTML; canonical order is
-    // newest-first (descending fact ID). Sort explicitly.
+    // facts.items is keyed by fact ID; values are HTML. Sort numerically
+    // rather than trusting JSON object key order; pagination.sort reports direction.
     $facts = $song['facts']['items'] ?? [];
-    krsort($facts, SORT_NUMERIC);
+    if (($song['pagination']['sort'] ?? 'oldest') === 'newest') {
+        krsort($facts, SORT_NUMERIC);
+    } else {
+        ksort($facts, SORT_NUMERIC);
+    }
 
     return ['facts' => $facts, 'url' => $song['url']];
 }
@@ -239,16 +243,16 @@ Notes:
 
 ```php
 /**
- * Returns every fact for a song, newest first, as [factId => html].
+ * Returns every fact for a song in the selected order, as [factId => html].
  * @return array<int,string>
  */
-function sf_all_facts(int $songId, int $pageSize = 50): array
+function sf_all_facts(int $songId, int $pageSize = 50, string $sort = 'oldest'): array
 {
     $all = [];
     $offset = 0;
 
     while (true) {
-        $result = sf_songfacts(['id' => $songId, 'limit' => $pageSize, 'offset' => $offset]);
+        $result = sf_songfacts(['id' => $songId, 'limit' => $pageSize, 'offset' => $offset, 'sort' => $sort]);
         $song = $result['song'];
 
         // 'facts' is omitted when offset is past the end of the set.
@@ -263,7 +267,11 @@ function sf_all_facts(int $songId, int $pageSize = 50): array
         $offset += $pagination['displayed'];
     }
 
-    krsort($all, SORT_NUMERIC);
+    if ($sort === 'newest') {
+        krsort($all, SORT_NUMERIC);
+    } else {
+        ksort($all, SORT_NUMERIC);
+    }
 
     return $all;
 }

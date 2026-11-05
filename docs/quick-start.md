@@ -173,7 +173,7 @@ A match returns the entity, its pagination state, and its facts nested inside it
 
 Three things to internalize:
 
-1. **`facts.items` is keyed by fact ID** (a string key holding an integer row ID), and values are **HTML**. Order is newest to oldest, i.e. descending fact ID. Render the HTML; don't expect a plain-text twin field.
+1. **`facts.items` is keyed by fact ID** (a string key holding an integer row ID), and values are **HTML**. Order is oldest to newest by default; send `"sort": "newest"` for descending fact ID. Render the HTML; don't expect a plain-text twin field.
 2. **Pagination lives inside the matched object**, and defaults to `limit: 10`. `total` is the full available fact count, so `not_displayed` tells you whether to ask for more.
 3. **A failure looks completely different** — only `meta`, with an error object:
 
