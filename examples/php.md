@@ -232,7 +232,7 @@ function sf_facts_for_track(string $artist, string $title): ?array
 Notes:
 
 - **`facts.items` values are HTML** — they contain inline `<i>` and `<b>`. Echo them as HTML (do not `htmlspecialchars()` them, or the markup will show as literal text); sanitize against your own allowlist if you're strict. There is no plain-text twin field.
-- **Optional fields are omitted, not `null`.** Use `isset()` / `??` for `youtube`, `categories`, `album`, `charts`, `main_image_url`, and `extended_entry_url`.
+- **Optional fields are omitted, not `null`.** Use `isset()` / `??` for `youtube`, `categories`, `album`, `charts`, `main_image_url`, `extended_entry_url`, and `artists`.
 - **Cache `$song['id']`** against your own catalog ID, then use `sf_songfacts(['id' => $id])` from then on — exact and immune to matcher variance.
 
 ## Paging through facts
