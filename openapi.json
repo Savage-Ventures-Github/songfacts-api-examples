@@ -1,0 +1,1912 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Songfacts API",
+    "version": "5.0.0",
+    "summary": "The stories behind the songs and artists, delivered as Songfacts and Artistfacts JSON.",
+    "description": "Editorial stories behind songs and artists, written by human music experts since 1999,\nreturned as display-ready JSON. Send an artist and title (or a Songfacts ID) and the API\nresolves it to one best match and returns its facts as HTML strings.\n\nUse it for Now Playing enrichment, artist bio modules, editorial/CMS enrichment, radio and\nplaylist segments, and this-day-in-music features.\n\n## Contract\n- `POST` + `application/json` only. Field names are `snake_case`; unknown fields are rejected.\n- **HTTP status is always `200`.** Read `meta.status` (`ok` / `fail`) and `meta.matched`.\n- A no-match is not an error: `meta.status = \"ok\"`, `meta.matched = false`.\n- Optional enrichment fields are omitted when unavailable (never `null`).\n- Send `\"debug\": true` for matcher diagnostics (not a versioned contract).\n\n## Authentication (HMAC-SHA256)\nEvery request carries `X-Client-Id`, `X-Timestamp`, `X-Nonce` and `X-Signature`.\nThe signature is the lowercase-hex HMAC-SHA256, keyed with your shared secret, of:\n\n```text\nPOST\\n{path}\\n{timestamp}\\n{nonce}\\n{sha256_hex(raw body bytes)}\n```\n\n- `path` is the URL path only, e.g. `/v5/songfacts` (no host, no trailing slash, no query).\n- `timestamp` is Unix seconds, accepted within ±300 s; `nonce` is 16–128 chars of `[A-Za-z0-9_-]`, never reused.\n- Hash the exact bytes you send. Server-to-server only; never ship the secret to a browser or app.\n\nFull guide and runnable cURL / Node.js / Python / PHP signing samples:\nhttps://github.com/Savage-Ventures-Github/songfacts-api-examples\n\n## Access\nCredentials are issued per client by Songfacts. Free trial accounts (500 calls) are available:\nhttps://api.songfacts.com/#get-started\n",
+    "contact": {
+      "name": "Songfacts",
+      "url": "https://api.songfacts.com/#get-started",
+      "email": "feedback@songfacts.com"
+    },
+    "termsOfService": "https://www.songfacts.com/blog/pages/terms-of-service",
+    "license": {
+      "name": "Proprietary — licensed editorial content, use governed by your Songfacts API agreement",
+      "url": "https://www.songfacts.com/blog/pages/terms-of-service"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.songfacts.com",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "clientId": [],
+      "timestamp": [],
+      "nonce": [],
+      "signature": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Songfacts",
+      "description": "Song identity plus the song's full facts."
+    },
+    {
+      "name": "Artistfacts",
+      "description": "Artist identity plus the artist's full facts."
+    },
+    {
+      "name": "Blurbs",
+      "description": "One short artist or song blurb, without the full fact list."
+    },
+    {
+      "name": "Categories",
+      "description": "Browse song categories and the songs in them."
+    },
+    {
+      "name": "Calendar",
+      "description": "This-day-in-music history, calendar categories and artist timelines."
+    }
+  ],
+  "externalDocs": {
+    "description": "Developer guide and code samples",
+    "url": "https://github.com/Savage-Ventures-Github/songfacts-api-examples"
+  },
+  "paths": {
+    "/v5/songfacts": {
+      "post": {
+        "tags": [
+          "Songfacts"
+        ],
+        "operationId": "getSongfacts",
+        "summary": "Get a song and its facts",
+        "description": "Resolve a song by `id`, or by `artist` + `title` (both required), and return its identity,\noptional enrichments and paginated facts (HTML, keyed by fact ID).\n`id` cannot be combined with `artist`/`title`; ID lookups never fall back to name matching.\n",
+        "externalDocs": {
+          "url": "https://github.com/Savage-Ventures-Github/songfacts-api-examples/blob/main/docs/endpoints/songfacts.md"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SongfactsRequest"
+              },
+              "examples": {
+                "byName": {
+                  "summary": "By artist and title",
+                  "value": {
+                    "artist": "U2",
+                    "title": "One"
+                  }
+                },
+                "byId": {
+                  "summary": "By Songfacts ID",
+                  "value": {
+                    "id": 933
+                  }
+                },
+                "newestPage2": {
+                  "summary": "Newest first, second page",
+                  "value": {
+                    "id": 933,
+                    "sort": "newest",
+                    "limit": 10,
+                    "offset": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processed (match or no-match) or failed — inspect `meta`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SongfactsMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Failure"
+                    }
+                  ]
+                },
+                "examples": {
+                  "matched": {
+                    "$ref": "#/components/examples/SongMatched"
+                  },
+                  "noMatch": {
+                    "$ref": "#/components/examples/SongNoMatch"
+                  },
+                  "failure": {
+                    "$ref": "#/components/examples/AuthFailure"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v5/artistfacts": {
+      "post": {
+        "tags": [
+          "Artistfacts"
+        ],
+        "operationId": "getArtistfacts",
+        "summary": "Get an artist and their facts",
+        "description": "Resolve an artist by `id` or `artist` name and return identity plus paginated Artistfacts.\n`title` is not accepted. A song's `song.artist.id` from `/v5/songfacts` can be used here directly.\n",
+        "externalDocs": {
+          "url": "https://github.com/Savage-Ventures-Github/songfacts-api-examples/blob/main/docs/endpoints/artistfacts.md"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtistfactsRequest"
+              },
+              "examples": {
+                "byName": {
+                  "summary": "By artist name",
+                  "value": {
+                    "artist": "Metallica"
+                  }
+                },
+                "byId": {
+                  "summary": "By ID, second page",
+                  "value": {
+                    "id": 24,
+                    "limit": 10,
+                    "offset": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processed (match or no-match) or failed — inspect `meta`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ArtistfactsMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Failure"
+                    }
+                  ]
+                },
+                "examples": {
+                  "matched": {
+                    "$ref": "#/components/examples/ArtistMatched"
+                  },
+                  "noMatch": {
+                    "$ref": "#/components/examples/ArtistNoMatch"
+                  },
+                  "failure": {
+                    "$ref": "#/components/examples/AuthFailure"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v5/blurbs": {
+      "post": {
+        "tags": [
+          "Blurbs"
+        ],
+        "operationId": "getBlurb",
+        "summary": "Get one artist or song blurb",
+        "description": "Send `artist` for an artist blurb, or `artist` + `title` for a song blurb (falls back to the\nartist blurb when the song has none). ID lookup and pagination fields are not supported.\n",
+        "externalDocs": {
+          "url": "https://github.com/Savage-Ventures-Github/songfacts-api-examples/blob/main/docs/endpoints/blurbs.md"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlurbsRequest"
+              },
+              "examples": {
+                "artist": {
+                  "summary": "Artist blurb",
+                  "value": {
+                    "artist": "Taylor Swift"
+                  }
+                },
+                "song": {
+                  "summary": "Song blurb",
+                  "value": {
+                    "artist": "U2",
+                    "title": "One"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processed (match or no-match) or failed — inspect `meta`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/BlurbMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Failure"
+                    }
+                  ]
+                },
+                "examples": {
+                  "matched": {
+                    "value": {
+                      "meta": {
+                        "status": "ok",
+                        "matched": true
+                      },
+                      "artist": {
+                        "id": 42456,
+                        "name": "Taylor Swift",
+                        "slug": "taylor-swift",
+                        "url": "https://www.songfacts.com/facts/taylor-swift",
+                        "blurb": "Example artist blurb text"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v5/categories": {
+      "post": {
+        "tags": [
+          "Categories"
+        ],
+        "operationId": "categories",
+        "summary": "Browse categories or list songs in a category",
+        "description": "`action: \"list\"` browses/searches categories (always paginated, no `showall`).\n`action: \"songs\"` returns songs for one category by `category_id` or `category_slug`.\n",
+        "externalDocs": {
+          "url": "https://github.com/Savage-Ventures-Github/songfacts-api-examples/blob/main/docs/endpoints/categories.md"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoriesRequest"
+              },
+              "examples": {
+                "search": {
+                  "summary": "Search categories",
+                  "value": {
+                    "action": "list",
+                    "q": "ryan tedder",
+                    "sort": "relevance",
+                    "limit": 10
+                  }
+                },
+                "byType": {
+                  "summary": "List by category type",
+                  "value": {
+                    "action": "list",
+                    "type": "written-by",
+                    "sort": "popularity",
+                    "limit": 10
+                  }
+                },
+                "songs": {
+                  "summary": "Songs in a category",
+                  "value": {
+                    "action": "songs",
+                    "category_slug": "songs-written-by-ryan-tedder",
+                    "sort": "chart_position",
+                    "limit": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processed (match or no-match) or failed — inspect `meta`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CategoryListResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CategorySongsResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Failure"
+                    }
+                  ]
+                },
+                "examples": {
+                  "songs": {
+                    "$ref": "#/components/examples/CategorySongs"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v5/calendar": {
+      "post": {
+        "tags": [
+          "Calendar"
+        ],
+        "operationId": "calendar",
+        "summary": "Music history by date, calendar category or timeline",
+        "description": "`action: \"entries\"` returns entries for a day (optionally narrowed by `month`/`year`).\n`action: \"categories\"` and `action: \"timeline\"` browse/search, or return entries for one\ncategory/timeline by ID or slug. Defaults: `limit` 20, `offset` 0.\n",
+        "externalDocs": {
+          "url": "https://github.com/Savage-Ventures-Github/songfacts-api-examples/blob/main/docs/endpoints/calendar.md"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarRequest"
+              },
+              "examples": {
+                "entries": {
+                  "summary": "This day in music",
+                  "value": {
+                    "action": "entries",
+                    "month": 9,
+                    "day": 24,
+                    "sort": "date_asc",
+                    "limit": 20
+                  }
+                },
+                "categories": {
+                  "summary": "Search calendar categories",
+                  "value": {
+                    "action": "categories",
+                    "q": "album",
+                    "limit": 20
+                  }
+                },
+                "timeline": {
+                  "summary": "Artist timeline entries",
+                  "value": {
+                    "action": "timeline",
+                    "timeline_slug": "nirvana",
+                    "limit": 20
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processed (match or no-match) or failed — inspect `meta`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CalendarResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoMatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Failure"
+                    }
+                  ]
+                },
+                "examples": {
+                  "entries": {
+                    "$ref": "#/components/examples/CalendarEntries"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "clientId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Client-Id",
+        "description": "Your lowercase slug client ID. Songfacts uses HMAC-SHA256 request signing; all four\nheaders (`X-Client-Id`, `X-Timestamp`, `X-Nonce`, `X-Signature`) are required on every request.\nCanonical string (joined with `\\n`, no trailing newline): `POST`, path, timestamp, nonce,\nlowercase hex SHA-256 of the raw body. Signature = lowercase hex HMAC-SHA256(canonical, secret).\nGuide: https://github.com/Savage-Ventures-Github/songfacts-api-examples/blob/main/docs/authentication.md\n"
+      },
+      "timestamp": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Timestamp",
+        "description": "Unix epoch time in whole seconds, accepted within ±300 seconds of server time."
+      },
+      "nonce": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Nonce",
+        "description": "16–128 characters of `[A-Za-z0-9_-]`, cryptographically random, fresh on every request."
+      },
+      "signature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Signature",
+        "description": "Exactly 64 lowercase hex characters — HMAC-SHA256 of the canonical string keyed with your shared secret."
+      }
+    },
+    "schemas": {
+      "PublicId": {
+        "description": "Public numeric ID. Native integer or a clean integer string; `0` is invalid.",
+        "oneOf": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$"
+          }
+        ]
+      },
+      "Limit": {
+        "description": "Page size. Values above 50 are silently clamped. `0` is invalid.",
+        "oneOf": [
+          {
+            "type": "integer",
+            "minimum": 1
+          },
+          {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$"
+          }
+        ]
+      },
+      "Offset": {
+        "description": "Zero-based offset. An out-of-range offset returns a valid empty page.",
+        "oneOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)$"
+          }
+        ]
+      },
+      "FactSort": {
+        "type": "string",
+        "enum": [
+          "oldest",
+          "newest"
+        ],
+        "default": "oldest",
+        "description": "Orders facts by fact ID before pagination."
+      },
+      "Showall": {
+        "type": "boolean",
+        "description": "Return the full set. Cannot be combined with `limit`/`offset`; may be restricted per client."
+      },
+      "Debug": {
+        "type": "boolean",
+        "description": "Adds a root `debug` diagnostics object to processed responses."
+      },
+      "SongfactsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Provide either `id`, or both `artist` and `title`.",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/PublicId"
+          },
+          "artist": {
+            "type": "string",
+            "minLength": 1,
+            "examples": [
+              "U2"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "examples": [
+              "One"
+            ]
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/FactSort"
+          },
+          "showall": {
+            "$ref": "#/components/schemas/Showall"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "id"
+            ]
+          },
+          {
+            "required": [
+              "artist",
+              "title"
+            ]
+          }
+        ]
+      },
+      "ArtistfactsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Provide either `id` or `artist`. `title` is not accepted.",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/PublicId"
+          },
+          "artist": {
+            "type": "string",
+            "minLength": 1,
+            "examples": [
+              "Metallica"
+            ]
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/FactSort"
+          },
+          "showall": {
+            "$ref": "#/components/schemas/Showall"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "id"
+            ]
+          },
+          {
+            "required": [
+              "artist"
+            ]
+          }
+        ]
+      },
+      "BlurbsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artist"
+        ],
+        "properties": {
+          "artist": {
+            "type": "string",
+            "minLength": 1,
+            "examples": [
+              "Taylor Swift"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional. Requests a song blurb (falls back to the artist blurb)."
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        }
+      },
+      "CategoriesRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CategoriesListRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CategoriesSongsRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "action",
+          "mapping": {
+            "list": "#/components/schemas/CategoriesListRequest",
+            "songs": "#/components/schemas/CategoriesSongsRequest"
+          }
+        }
+      },
+      "CategoriesListRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "list"
+          },
+          "type": {
+            "type": "string",
+            "description": "Category type slug to narrow by, e.g. `written-by`."
+          },
+          "q": {
+            "type": "string",
+            "description": "Free-text search."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "type_then_name",
+              "name",
+              "popularity",
+              "relevance"
+            ],
+            "description": "`relevance` is allowed only when `q` is present. `popularity` = linked-song count."
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        }
+      },
+      "CategoriesSongsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "description": "Provide exactly one of `category_id` or `category_slug`.",
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "songs"
+          },
+          "category_id": {
+            "$ref": "#/components/schemas/PublicId"
+          },
+          "category_slug": {
+            "type": "string",
+            "examples": [
+              "songs-written-by-ryan-tedder"
+            ]
+          },
+          "artist": {
+            "type": "string",
+            "description": "Narrow to songs by this artist."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "chart_position",
+              "year_desc",
+              "year_asc"
+            ],
+            "default": "chart_position"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "showall": {
+            "$ref": "#/components/schemas/Showall"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "category_id"
+            ]
+          },
+          {
+            "required": [
+              "category_slug"
+            ]
+          }
+        ]
+      },
+      "CalendarRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CalendarEntriesRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CalendarCategoriesRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CalendarTimelineRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "action",
+          "mapping": {
+            "entries": "#/components/schemas/CalendarEntriesRequest",
+            "categories": "#/components/schemas/CalendarCategoriesRequest",
+            "timeline": "#/components/schemas/CalendarTimelineRequest"
+          }
+        }
+      },
+      "CalendarEntriesRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "day"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "entries"
+          },
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Numeric month only."
+          },
+          "year": {
+            "type": "integer"
+          },
+          "filter_event_of_the_day": {
+            "type": "boolean"
+          },
+          "filter_featured_event": {
+            "type": "boolean",
+            "description": "With both filters true, entries matching either flag are returned."
+          },
+          "sort": {
+            "type": "string",
+            "enum": [
+              "date_asc",
+              "date_desc"
+            ]
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "showall": {
+            "$ref": "#/components/schemas/Showall"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        }
+      },
+      "CalendarCategoriesRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "description": "Without `category_id`/`category_slug` this browses/searches categories (`q` allowed only then).",
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "categories"
+          },
+          "q": {
+            "type": "string"
+          },
+          "category_id": {
+            "$ref": "#/components/schemas/PublicId"
+          },
+          "category_slug": {
+            "type": "string",
+            "examples": [
+              "album-releases"
+            ]
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "showall": {
+            "$ref": "#/components/schemas/Showall"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        }
+      },
+      "CalendarTimelineRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "description": "Without `timeline_id`/`timeline_slug` this browses/searches timelines (`q` allowed only then).",
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "timeline"
+          },
+          "q": {
+            "type": "string"
+          },
+          "timeline_id": {
+            "$ref": "#/components/schemas/PublicId"
+          },
+          "timeline_slug": {
+            "type": "string",
+            "examples": [
+              "nirvana"
+            ]
+          },
+          "limit": {
+            "$ref": "#/components/schemas/Limit"
+          },
+          "offset": {
+            "$ref": "#/components/schemas/Offset"
+          },
+          "showall": {
+            "$ref": "#/components/schemas/Showall"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/Debug"
+          }
+        }
+      },
+      "MetaOk": {
+        "type": "object",
+        "required": [
+          "status",
+          "matched"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "matched": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NoMatch": {
+        "type": "object",
+        "required": [
+          "meta"
+        ],
+        "description": "A completed lookup that found nothing. Not an error.",
+        "properties": {
+          "meta": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MetaOk"
+              },
+              {
+                "properties": {
+                  "matched": {
+                    "const": false
+                  }
+                }
+              }
+            ]
+          },
+          "best_candidate": {
+            "$ref": "#/components/schemas/BestCandidate"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      },
+      "Failure": {
+        "type": "object",
+        "required": [
+          "meta"
+        ],
+        "properties": {
+          "meta": {
+            "type": "object",
+            "required": [
+              "status",
+              "error"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "fail"
+              },
+              "error": {
+                "$ref": "#/components/schemas/Error"
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "type",
+          "code"
+        ],
+        "description": "Codes are the contract; there is intentionally no human-readable message.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "auth",
+              "access",
+              "request",
+              "internal"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "missing_auth_headers",
+              "unknown_client",
+              "bad_signature",
+              "expired_timestamp",
+              "replayed_nonce",
+              "inactive_client",
+              "endpoint_not_allowed",
+              "showall_not_allowed",
+              "quota_exceeded",
+              "invalid_method",
+              "invalid_content_type",
+              "invalid_json",
+              "invalid_fields",
+              "internal_error",
+              "database_error",
+              "cache_error"
+            ]
+          },
+          "fields": {
+            "type": "object",
+            "description": "Per-field problems (all reported together).",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "required",
+                "invalid",
+                "not_allowed_with_id_lookup",
+                "not_allowed_with_name_lookup",
+                "not_allowed_with_pagination",
+                "not_allowed_with_showall"
+              ]
+            }
+          },
+          "expected_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BestCandidate": {
+        "type": "object",
+        "description": "Closest below-threshold candidate on a name-based no-match. Never present on ID lookups.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "artist": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "match_score": {
+            "type": "integer"
+          },
+          "match_method": {
+            "type": "string"
+          }
+        }
+      },
+      "DebugInfo": {
+        "type": "object",
+        "description": "Diagnostics returned when `debug` is true. Not a versioned contract.",
+        "additionalProperties": true,
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "lookup_mode": {
+            "type": "string"
+          },
+          "normalized_input": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "cache_hit": {
+            "type": "boolean"
+          },
+          "candidate_count": {
+            "type": "integer"
+          },
+          "match": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "match_method": {
+                "type": "string",
+                "examples": [
+                  "id_exact",
+                  "normalized_exact",
+                  "fuzzy_short_title_artist_pool",
+                  "fuzzy_fulltext_reranked",
+                  "fuzzy_title_fulltext_reranked",
+                  "fuzzy_artist_fulltext_reranked"
+                ]
+              },
+              "match_score": {
+                "type": "integer"
+              },
+              "match_threshold_applied": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "FactPagination": {
+        "type": "object",
+        "required": [
+          "limit",
+          "offset",
+          "displayed",
+          "total",
+          "not_displayed"
+        ],
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/FactSort"
+          },
+          "displayed": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "not_displayed": {
+            "type": "integer"
+          },
+          "showall": {
+            "type": "boolean",
+            "description": "Present only when `showall` was sent."
+          },
+          "limit_clamped": {
+            "type": "boolean",
+            "description": "Present only when the server clamped or defaulted the limit."
+          }
+        }
+      },
+      "Facts": {
+        "type": "object",
+        "description": "Omitted when `offset` is past the end of the set.",
+        "properties": {
+          "items": {
+            "type": "object",
+            "description": "Keyed by fact ID (integer serialized as a string). Values are HTML.\nSort keys as integers after parsing; JSON key order is not guaranteed.\n",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ArtistRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "SongCategory": {
+        "type": "object",
+        "properties": {
+          "category_id": {
+            "type": "integer"
+          },
+          "category_slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Song": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "slug",
+          "url",
+          "artist"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Stable public song ID."
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Canonical Songfacts page; use for attribution."
+          },
+          "artist": {
+            "$ref": "#/components/schemas/ArtistRef"
+          },
+          "youtube": {
+            "type": "object",
+            "properties": {
+              "youtubeid": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "has_lyrics": {
+            "type": "boolean"
+          },
+          "album": {
+            "type": "string"
+          },
+          "release_year": {
+            "type": "integer"
+          },
+          "charts": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "featured_artists": {},
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SongCategory"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/FactPagination"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/Facts"
+          }
+        }
+      },
+      "Artist": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "url"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Stable public artist ID."
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "dates_of_existence": {
+            "type": "string"
+          },
+          "members": {},
+          "pagination": {
+            "$ref": "#/components/schemas/FactPagination"
+          },
+          "facts": {
+            "$ref": "#/components/schemas/Facts"
+          }
+        }
+      },
+      "SongfactsMatch": {
+        "type": "object",
+        "required": [
+          "meta",
+          "song"
+        ],
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaOk"
+          },
+          "song": {
+            "$ref": "#/components/schemas/Song"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      },
+      "ArtistfactsMatch": {
+        "type": "object",
+        "required": [
+          "meta",
+          "artist"
+        ],
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaOk"
+          },
+          "artist": {
+            "$ref": "#/components/schemas/Artist"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      },
+      "BlurbMatch": {
+        "type": "object",
+        "required": [
+          "meta"
+        ],
+        "description": "Contains `artist` (artist mode) or `song` (song mode), each with a single `blurb`.",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaOk"
+          },
+          "artist": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ArtistRef"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "blurb": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "song": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "artist": {
+                "$ref": "#/components/schemas/ArtistRef"
+              },
+              "blurb": {
+                "type": "string"
+              }
+            }
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      },
+      "CategoryType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "song_count": {
+            "type": "integer"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CategoryType"
+          }
+        }
+      },
+      "ListPagination": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "displayed": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "not_displayed": {
+            "type": "integer"
+          },
+          "limit_clamped": {
+            "type": "boolean"
+          },
+          "showall": {
+            "type": "boolean"
+          },
+          "offset_out_of_range": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CategorySong": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "release_date": {
+            "type": "string"
+          },
+          "chart_position": {
+            "type": "integer"
+          },
+          "charts": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "artist": {
+            "$ref": "#/components/schemas/ArtistRef"
+          }
+        }
+      },
+      "CategoryListResult": {
+        "type": "object",
+        "required": [
+          "meta",
+          "categories",
+          "pagination"
+        ],
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaOk"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CategoryType"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/ListPagination"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      },
+      "CategorySongsResult": {
+        "type": "object",
+        "required": [
+          "meta",
+          "category",
+          "songs",
+          "pagination"
+        ],
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaOk"
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategorySong"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/ListPagination"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      },
+      "CalendarGroup": {
+        "type": "object",
+        "description": "A calendar category or timeline.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "entry_count": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "CalendarDate": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer"
+          },
+          "month": {
+            "type": "integer"
+          },
+          "day": {
+            "type": "integer"
+          }
+        }
+      },
+      "CalendarEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "body_extended": {
+            "type": "string"
+          },
+          "has_extended_body": {
+            "type": "boolean"
+          },
+          "event_of_the_day": {
+            "type": "boolean"
+          },
+          "featured_event": {
+            "type": "boolean"
+          },
+          "date": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "extended_entry_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "main_image_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "artists": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarGroup"
+            }
+          },
+          "timelines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarGroup"
+            }
+          }
+        }
+      },
+      "CalendarResult": {
+        "type": "object",
+        "required": [
+          "meta"
+        ],
+        "description": "Shape depends on `action` — browse arrays (`categories`/`timelines`), or a context object (`date`, `category`, `timeline`) plus `entries`.",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/MetaOk"
+          },
+          "date": {
+            "$ref": "#/components/schemas/CalendarDate"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CalendarGroup"
+          },
+          "timeline": {
+            "$ref": "#/components/schemas/CalendarGroup"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarGroup"
+            }
+          },
+          "timelines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarGroup"
+            }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarEntry"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/ListPagination"
+          },
+          "debug": {
+            "$ref": "#/components/schemas/DebugInfo"
+          }
+        }
+      }
+    },
+    "examples": {
+      "SongMatched": {
+        "summary": "Matched song",
+        "value": {
+          "meta": {
+            "status": "ok",
+            "matched": true
+          },
+          "song": {
+            "id": 933,
+            "title": "One",
+            "slug": "one",
+            "url": "https://www.songfacts.com/facts/u2/one",
+            "artist": {
+              "id": 78511,
+              "name": "U2",
+              "slug": "u2",
+              "url": "https://www.songfacts.com/songs/u2"
+            },
+            "youtube": {
+              "youtubeid": "ftjEcrrf7r0",
+              "url": "https://www.youtube.com/watch?v=ftjEcrrf7r0"
+            },
+            "has_lyrics": true,
+            "categories": [
+              {
+                "category_id": 10995,
+                "category_slug": "songs-written-by-ryan-tedder",
+                "name": "Songs written by Ryan Tedder",
+                "url": "https://www.songfacts.com/category/songs-written-by-ryan-tedder"
+              }
+            ],
+            "pagination": {
+              "limit": 10,
+              "offset": 0,
+              "sort": "oldest",
+              "displayed": 10,
+              "total": 23,
+              "not_displayed": 13,
+              "limit_clamped": true
+            },
+            "facts": {
+              "items": {
+                "190815": "U2 recorded a new version of \"One\" for their 2023 album <b>Songs Of Surrender</b>. It debuted at the Super Bowl that year as part of the Walter Payton Man Of The Year presentation."
+              }
+            }
+          }
+        }
+      },
+      "SongNoMatch": {
+        "summary": "No match with best candidate",
+        "value": {
+          "meta": {
+            "status": "ok",
+            "matched": false
+          },
+          "best_candidate": {
+            "id": 933,
+            "artist": "U2",
+            "title": "One",
+            "match_score": 62,
+            "match_method": "fuzzy_fulltext_reranked"
+          }
+        }
+      },
+      "ArtistMatched": {
+        "summary": "Matched artist",
+        "value": {
+          "meta": {
+            "status": "ok",
+            "matched": true
+          },
+          "artist": {
+            "id": 24,
+            "name": "Metallica",
+            "slug": "metallica",
+            "url": "https://www.songfacts.com/facts/metallica",
+            "pagination": {
+              "limit": 10,
+              "offset": 0,
+              "sort": "oldest",
+              "displayed": 10,
+              "total": 27,
+              "not_displayed": 17,
+              "limit_clamped": true
+            },
+            "facts": {
+              "items": {
+                "14682": "On their 2003-2004 tour, Metallica started mixing up their setlists, a process they refined over the years."
+              }
+            }
+          }
+        }
+      },
+      "ArtistNoMatch": {
+        "summary": "No match with best candidate",
+        "value": {
+          "meta": {
+            "status": "ok",
+            "matched": false
+          },
+          "best_candidate": {
+            "id": 24,
+            "artist": "Metallica",
+            "match_score": 71,
+            "match_method": "fuzzy_artist_fulltext_reranked"
+          }
+        }
+      },
+      "AuthFailure": {
+        "summary": "Signature failure",
+        "value": {
+          "meta": {
+            "status": "fail",
+            "error": {
+              "type": "auth",
+              "code": "bad_signature"
+            }
+          }
+        }
+      },
+      "CategorySongs": {
+        "summary": "Songs in a category",
+        "value": {
+          "meta": {
+            "status": "ok",
+            "matched": true
+          },
+          "category": {
+            "id": 10995,
+            "name": "Songs written by Ryan Tedder",
+            "slug": "songs-written-by-ryan-tedder",
+            "song_count": 164,
+            "type": {
+              "id": 1,
+              "name": "Written By",
+              "slug": "written-by"
+            }
+          },
+          "songs": [
+            {
+              "id": 9094,
+              "title": "Bleeding Love",
+              "slug": "bleeding-love",
+              "url": "https://www.songfacts.com/facts/leona-lewis/bleeding-love",
+              "release_date": "2007",
+              "chart_position": 1,
+              "charts": {
+                "us": 1,
+                "uk": 1
+              },
+              "artist": {
+                "id": 43613,
+                "name": "Leona Lewis",
+                "slug": "leona-lewis",
+                "url": "https://www.songfacts.com/songs/leona-lewis"
+              }
+            }
+          ],
+          "pagination": {
+            "limit": 10,
+            "offset": 0,
+            "displayed": 1,
+            "total": 164,
+            "not_displayed": 163,
+            "limit_clamped": true
+          }
+        }
+      },
+      "CalendarEntries": {
+        "summary": "Entries for a date",
+        "value": {
+          "meta": {
+            "status": "ok",
+            "matched": true
+          },
+          "date": {
+            "month": 9,
+            "day": 24,
+            "year": 1991
+          },
+          "entries": [
+            {
+              "id": 12345,
+              "title": "Nirvana releases Nevermind",
+              "description": "Short summary text",
+              "event_of_the_day": true,
+              "featured_event": false,
+              "date": {
+                "year": 1991,
+                "month": 9,
+                "day": 24
+              },
+              "extended_entry_url": "https://calendar.songfacts.com/september/24/12345",
+              "artists": [
+                {
+                  "id": 54172,
+                  "name": "Nirvana"
+                }
+              ]
+            }
+          ],
+          "pagination": {
+            "total": 2,
+            "displayed": 2,
+            "limit": 20,
+            "offset": 0,
+            "showall": false,
+            "offset_out_of_range": false
+          }
+        }
+      }
+    }
+  }
+}

@@ -170,6 +170,7 @@ Full walkthrough: [docs/quick-start.md](docs/quick-start.md).
 | [Endpoint: `/v5/calendar`](docs/endpoints/calendar.md) | Calendar category, timeline, and date-entry request modes, pagination, samples |
 | [Use Cases](docs/use-cases.md) | Worked integrations for real product surfaces |
 | [Roadmap](docs/roadmap.md) | Planned endpoints and platform enhancements |
+| [OpenAPI spec](openapi.yaml) | Machine-readable OpenAPI 3.1 definition of all v5 endpoints ([JSON](openapi.json)) |
 
 ## Use Cases
 
