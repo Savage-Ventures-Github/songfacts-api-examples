@@ -8,13 +8,13 @@ A complete Songfacts API v5 client in PHP. No dependencies beyond the cURL exten
 - [Paging through facts](#paging-through-facts)
 - [Verifying your signing](#verifying-your-signing)
 
-Environment: `BASE_URL`, `CLIENT_ID`, `CLIENT_SECRET` — see [setup](README.md#setup).
+Runnable client: [clients/php/songfacts_api_client.php](clients/php/songfacts_api_client.php). It loads the shared `examples/.env`; see [setup](README.md#setup). The code below is the signing implementation for learning or adaptation.
 
 ---
 
 ## The client
 
-`songfacts_client.php`
+`songfacts_api_client.php`
 
 ```php
 <?php
@@ -151,7 +151,7 @@ Two PHP-specific notes:
 
 declare(strict_types=1);
 
-require __DIR__ . '/songfacts_client.php';
+require __DIR__ . '/clients/php/songfacts_api_client.php';
 
 $examples = [
     'songfacts by id'     => fn(): array => sf_songfacts(['id' => 933]),

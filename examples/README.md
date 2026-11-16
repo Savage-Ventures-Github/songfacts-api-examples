@@ -4,34 +4,98 @@ Signed, runnable examples for Songfacts API v5 in four languages. Each one imple
 
 | Language | File | Requires |
 | --- | --- | --- |
-| cURL / bash | [curl.md](curl.md) | `bash`, `curl`, `openssl` |
-| JavaScript | [javascript.md](javascript.md) | Node.js 18+ (built-in `fetch` and `node:crypto`) |
-| Python | [python.md](python.md) | Python 3.8+ (standard library only) |
-| PHP | [php.md](php.md) | PHP 7.4+ with cURL |
+| cURL / bash | [clients/bash/sf_call.sh](clients/bash/sf_call.sh) | `bash`, `curl`, `openssl` |
+| JavaScript | [clients/node/songfacts_api_client.mjs](clients/node/songfacts_api_client.mjs) | Node.js 18+ (built-in `fetch` and `node:crypto`) |
+| Python | [clients/python/songfacts_api_client.py](clients/python/songfacts_api_client.py) | Python 3.8+ (standard library only) |
+| PHP | [clients/php/songfacts_api_client.php](clients/php/songfacts_api_client.php) | PHP 7.4+ with cURL |
+| PHP web demo | [web/public/songfacts-example.php](web/public/songfacts-example.php) | PHP 7.4+ with cURL and a web server |
 
 No SDK is required — signing is about twenty lines in any language.
 
-## Setup
+The runnable files and shared config are arranged like this:
 
-Every sample reads the same three environment variables:
+```text
+examples/
+├── .env.example                         # safe template, committed
+├── .env                                 # your private copy, ignored by Git
+├── .gitignore
+├── clients/                             # server-side clients; not web-served
+│   ├── bash/sf_call.sh
+│   ├── node/songfacts_api_client.mjs
+│   ├── python/songfacts_api_client.py
+│   └── php/songfacts_api_client.php
+└── web/
+	└── public/                          # web server document root for demo
+		└── songfacts-example.php         # one-file PHP web example
+```
+
+## Setup: save your settings for reuse
+
+The runnable clients and PHP web demo read one private config file shared by every language. The instructions below use paths relative to the repository root (the folder containing the top-level `README.md`). Start there; do not `cd` into `examples/` before running these commands.
+
+1. The tracked template is `examples/.env.example`.
+2. **Copy** the template to `examples/.env`. Do not rename or edit `.env.example`; leave it in place as a clean template for future setup.
+
+   macOS, Linux, or Git Bash:
+
+   ```bash
+   cp examples/.env.example examples/.env
+   ```
+
+   Windows PowerShell:
+
+   ```powershell
+   Copy-Item examples/.env.example examples/.env
+   ```
+
+   Windows Command Prompt:
+
+   ```bat
+   copy examples\.env.example examples\.env
+   ```
+
+3. Open `examples/.env` in a text editor and replace the example values with the credentials issued to you:
+
+   ```text
+   BASE_URL=https://api.songfacts.com
+   CLIENT_ID=your-client-id
+   CLIENT_SECRET=your-shared-secret
+   ```
+
+4. Save the file. Use one `NAME=value` setting per line, with no quotes or spaces around `=`. The client programs look for `examples/.env` relative to their own files. They also accept these values from the process environment; environment values take precedence over values in the file.
+5. From the repository root, run the client for your language. For example:
+
+   ```bash
+   bash examples/clients/bash/sf_call.sh /v5/songfacts '{"artist":"U2","title":"One"}'
+   ```
+
+   ```bash
+   node examples/clients/node/songfacts_api_client.mjs
+   python examples/clients/python/songfacts_api_client.py
+   php examples/clients/php/songfacts_api_client.php
+   ```
+
+   The Node.js, Python, and PHP files provide functions for calling each endpoint. See the language guides for examples of using those functions in your application.
+
+`BASE_URL` must be the API host assigned to your integration: production, or a staging/dev host provided for your account. Credentials come from Songfacts; see [Get Access](../README.md#get-access-to-songfacts-api).
+
+The repository includes `examples/.gitignore`, which excludes the private `examples/.env` file from Git. The example template `.env.example` is safe to commit because it contains only placeholders. Still, treat `.env` as a password: do not commit it, upload it to a public web directory, or put it in screenshots or support messages.
+
+### Using the PHP web demo
+
+The single-file web example is `examples/web/public/songfacts-example.php`. For a quick local preview from the repository root, run:
 
 ```bash
-export BASE_URL="https://api.songfacts.com"
-export CLIENT_ID="your-client-id"
-export CLIENT_SECRET="your-shared-secret"
+php -S 127.0.0.1:8000 -t examples/web/public
 ```
 
-PowerShell:
+Then open `http://127.0.0.1:8000/songfacts-example.php`. This built-in PHP server is for local development only. When configuring a real web server, set its **document root** (the directory it serves to visitors) to `examples/web/public/`—not to the repository root or the `examples/` directory. The private config file is `examples/.env`, outside that public directory.
 
-```powershell
-$env:BASE_URL = 'https://api.songfacts.com'
-$env:CLIENT_ID = 'your-client-id'
-$env:CLIENT_SECRET = 'your-shared-secret'
-```
+The demo signs requests in PHP on the server. It does not put `CLIENT_SECRET` in HTML or browser JavaScript. The example form is not an authentication system; protect a deployed demo or restrict it to a development environment so visitors cannot use your API quota.
 
-Set `BASE_URL` to the host assigned to your integration — production, or a staging/dev host provided for your account. Credentials come from Songfacts; see [Get Access](../README.md#get-access-to-songfacts-api).
+For a real production website, prefer your hosting provider's secret/environment settings or a secrets manager. If you use a config file, keep it outside the public document root and restrict read access to the application account. Do not deploy this repository's example `.env` with real credentials.
 
-> **Never commit the secret, and never ship it to a client device.** Anything holding it can call the API as you. If you prefer not to use environment variables, load it from your secrets manager — just don't paste it into a file you'll push.
+The Markdown guides also contain compact code snippets for learning and adapting the signing flow. Those snippets read environment variables; the runnable files under `examples/clients/` additionally load the shared `examples/.env` file.
 
 ## The core flows
 

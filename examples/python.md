@@ -8,13 +8,13 @@ A complete Songfacts API v5 client in Python. **Standard library only** — no `
 - [Paging through facts](#paging-through-facts)
 - [Verifying your signing](#verifying-your-signing)
 
-Environment: `BASE_URL`, `CLIENT_ID`, `CLIENT_SECRET` — see [setup](README.md#setup).
+Runnable client: [clients/python/songfacts_api_client.py](clients/python/songfacts_api_client.py). It loads the shared `examples/.env`; see [setup](README.md#setup). The code below is the signing implementation for learning or adaptation.
 
 ---
 
 ## The client
 
-`songfacts_client.py`
+`clients/python/songfacts_api_client.py`
 
 ```python
 """Minimal Songfacts API v5 client — standard library only."""
@@ -106,7 +106,7 @@ def calendar(**payload):
 ```python
 import json
 
-from songfacts_client import artistfacts, blurbs, calendar, categories, songfacts
+from clients.python.songfacts_api_client import artistfacts, blurbs, calendar, categories, songfacts
 
 examples = [
     ("songfacts by id",     lambda: songfacts(id=933)),

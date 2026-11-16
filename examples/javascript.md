@@ -9,13 +9,13 @@ A complete Songfacts API v5 client for Node.js. No dependencies — built-in `fe
 - [Verifying your signing](#verifying-your-signing)
 - [Server-side only](#server-side-only)
 
-Environment: `BASE_URL`, `CLIENT_ID`, `CLIENT_SECRET` — see [setup](README.md#setup).
+Runnable client: [clients/node/songfacts_api_client.mjs](clients/node/songfacts_api_client.mjs). It loads the shared `examples/.env`; see [setup](README.md#setup). The code below is the signing implementation for learning or adaptation.
 
 ---
 
 ## The client
 
-`songfacts-client.mjs`
+`clients/node/songfacts_api_client.mjs`
 
 ```js
 // Minimal Songfacts API v5 client -- Node.js 18+, no dependencies.
@@ -85,7 +85,7 @@ export const calendar = (payload) => call("/v5/calendar", payload);
 `run-examples.mjs`
 
 ```js
-import { artistfacts, blurbs, calendar, categories, songfacts } from "./songfacts-client.mjs";
+import { artistfacts, blurbs, calendar, categories, songfacts } from "./clients/node/songfacts_api_client.mjs";
 
 const examples = [
   ["songfacts by id",     () => songfacts({ id: 933 })],

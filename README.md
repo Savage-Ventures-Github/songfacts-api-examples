@@ -1,5 +1,7 @@
 # Songfacts API v5 — Examples & Developer Guide
 
+**Documentation version:** 1.3 · **Last updated:** 2026-11-16
+
 **The stories behind the songs and artists, delivered as ready-to-read Songfacts® and Artistfacts your app can drop straight into any music experience.**
 
 This repository is the public companion to [api.songfacts.com](https://api.songfacts.com/). It explains what the Songfacts API v5 offers, and gives developers copy-pasteable request signing code, real request/response samples, and worked use-cases.
@@ -188,7 +190,7 @@ Signed, runnable examples for the core songfacts and artistfacts flows plus the 
 - [Python](examples/python.md)
 - [PHP](examples/php.md)
 
-All samples read `BASE_URL`, `CLIENT_ID` and `CLIENT_SECRET` from the environment. See [examples/README.md](examples/README.md).
+The runnable clients read `BASE_URL`, `CLIENT_ID` and `CLIENT_SECRET` from the shared, private `examples/.env` file, with process environment variables taking precedence. See [examples/README.md](examples/README.md) for setup and web-root guidance.
 
 ---
 

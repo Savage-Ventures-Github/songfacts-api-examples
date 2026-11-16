@@ -11,7 +11,9 @@ Requires `bash`, `curl` and `openssl`.
 - [Reading the result](#reading-the-result)
 - [Verifying your signing](#verifying-your-signing)
 
-Environment: `BASE_URL`, `CLIENT_ID`, `CLIENT_SECRET` — see [setup](README.md#setup).
+Runnable client: [clients/bash/sf_call.sh](clients/bash/sf_call.sh). It loads the shared `examples/.env`; see [setup](README.md#setup). The helper below shows how request signing works.
+
+The commands in this guide assume you saved the helper shown below as `sf_call.sh` in your current directory and set `BASE_URL`, `CLIENT_ID`, and `CLIENT_SECRET` in that shell. For the ready-to-run repository client, use `bash examples/clients/bash/sf_call.sh ...`; it loads the shared `.env` file automatically.
 
 ---
 
