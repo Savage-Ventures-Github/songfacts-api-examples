@@ -1,0 +1,5 @@
+# Private local credentials. Commit only .env.example.
+.env
+
+# Python bytecode generated when testing/importing the sample client.
+__pycache__/
